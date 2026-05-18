@@ -21,3 +21,10 @@ export const ledgerHeaders = [
   'source',
   'syncStatus',
 ] as const;
+
+export const categoryHeaders = ['id', 'name', 'kind', 'color', 'icon', 'isDefault'] as const;
+
+export const sheetRanges = {
+  categories: `${sheetNames.categories}!A:F`,
+  categoriesData: `${sheetNames.categories}!A2:F`,
+} as const;

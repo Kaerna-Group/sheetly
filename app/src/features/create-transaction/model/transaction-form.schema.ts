@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const transactionFormSchema = z.object({
   amount: z.string().min(1),
+  categoryId: z.string().min(1),
   categoryName: z.string().min(1),
   comment: z.string().optional(),
   currency: z.string().min(3),

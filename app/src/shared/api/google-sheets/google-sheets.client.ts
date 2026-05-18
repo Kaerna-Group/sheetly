@@ -1,6 +1,9 @@
 import type { AppendValuesRequest } from './types/append-values-request.type';
 import type { BatchUpdateValuesRequest } from './types/batch-update-request.type';
+import type { SpreadsheetMetadata } from './types/spreadsheet-metadata.type';
 import type { ValueRange } from './types/value-range.type';
+import { googleSheetsEndpoints } from './google-sheets.endpoints';
+import { mapGoogleSheetsNetworkError, mapGoogleSheetsResponseError } from './google-sheets.errors';
 
 export type ReadRangeRequest = {
   accessToken: string;
@@ -8,26 +11,92 @@ export type ReadRangeRequest = {
   spreadsheetId: string;
 };
 
+export type GetSpreadsheetMetadataRequest = {
+  accessToken: string;
+  spreadsheetId: string;
+};
+
 export type GoogleSheetsClient = {
   appendValues: (request: AppendValuesRequest) => Promise<void>;
   batchUpdateValues: (request: BatchUpdateValuesRequest) => Promise<void>;
+  getSpreadsheetMetadata: (request: GetSpreadsheetMetadataRequest) => Promise<SpreadsheetMetadata>;
   readRange: (request: ReadRangeRequest) => Promise<ValueRange>;
 };
 
-export function createGoogleSheetsClient(): GoogleSheetsClient {
+type CreateGoogleSheetsClientParams = {
+  fetcher?: typeof fetch;
+};
+
+const valueInputOption = 'USER_ENTERED';
+
+function buildAuthHeaders(accessToken: string) {
   return {
-    async appendValues() {
-      throw new Error(
-        'Google Sheets appendValues is planned for the Google Integration milestone.',
-      );
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+  const text = await response.text();
+
+  return text ? (JSON.parse(text) as T) : ({} as T);
+}
+
+async function requestJson<T>(fetcher: typeof fetch, url: string, init: RequestInit): Promise<T> {
+  try {
+    const response = await fetcher(url, init);
+
+    if (!response.ok) {
+      throw mapGoogleSheetsResponseError(response.status, await parseJsonResponse(response));
+    }
+
+    return parseJsonResponse<T>(response);
+  } catch (error) {
+    throw mapGoogleSheetsNetworkError(error);
+  }
+}
+
+export function createGoogleSheetsClient({
+  fetcher = fetch,
+}: CreateGoogleSheetsClientParams = {}): GoogleSheetsClient {
+  return {
+    async appendValues({ accessToken, range, spreadsheetId, values }) {
+      const url = new URL(googleSheetsEndpoints.appendValues(spreadsheetId, range));
+      url.searchParams.set('valueInputOption', valueInputOption);
+
+      await requestJson(fetcher, url.toString(), {
+        method: 'POST',
+        headers: buildAuthHeaders(accessToken),
+        body: JSON.stringify({ values }),
+      });
     },
-    async batchUpdateValues() {
-      throw new Error(
-        'Google Sheets batchUpdateValues is planned for the Google Integration milestone.',
-      );
+    async batchUpdateValues({ accessToken, data, spreadsheetId }) {
+      await requestJson(fetcher, googleSheetsEndpoints.batchUpdateValues(spreadsheetId), {
+        method: 'POST',
+        headers: buildAuthHeaders(accessToken),
+        body: JSON.stringify({
+          data,
+          valueInputOption,
+        }),
+      });
     },
-    async readRange() {
-      throw new Error('Google Sheets readRange is planned for the Google Integration milestone.');
+    async getSpreadsheetMetadata({ accessToken, spreadsheetId }) {
+      const url = new URL(googleSheetsEndpoints.spreadsheet(spreadsheetId));
+      url.searchParams.set(
+        'fields',
+        'spreadsheetId,properties.title,sheets.properties(sheetId,title)',
+      );
+
+      return requestJson<SpreadsheetMetadata>(fetcher, url.toString(), {
+        method: 'GET',
+        headers: buildAuthHeaders(accessToken),
+      });
+    },
+    async readRange({ accessToken, range, spreadsheetId }) {
+      return requestJson<ValueRange>(fetcher, googleSheetsEndpoints.values(spreadsheetId, range), {
+        method: 'GET',
+        headers: buildAuthHeaders(accessToken),
+      });
     },
   };
 }

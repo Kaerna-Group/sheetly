@@ -1,4 +1,4 @@
 export type SpreadsheetConnection = {
-  spreadsheetId: string;
-  status: 'idle' | 'connected' | 'invalid';
+  spreadsheetId: string | null;
+  status: 'idle' | 'checking' | 'connected' | 'needs-auth' | 'invalid' | 'no-access' | 'error';
 };

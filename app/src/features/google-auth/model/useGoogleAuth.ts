@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useContext } from 'react';
 
-import type { GoogleAuthState } from '../types/google-auth-state.type';
+import { GoogleAuthContext } from './google-auth.context';
 
 export function useGoogleAuth() {
-  const [state] = useState<GoogleAuthState>({
-    accessToken: null,
-    status: 'idle',
-  });
+  const state = useContext(GoogleAuthContext);
+
+  if (!state) {
+    throw new Error('useGoogleAuth must be used inside GoogleAuthProvider.');
+  }
 
   return state;
 }

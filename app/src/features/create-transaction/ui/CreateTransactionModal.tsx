@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import type { Category } from '@entities/category';
+import { CategoryCombobox } from '@features/manage-categories';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Modal } from '@shared/ui/modal';
@@ -14,6 +16,7 @@ type CreateTransactionModalProps = {
 
 const initialValues: TransactionFormValues = {
   amount: '',
+  categoryId: '',
   categoryName: '',
   currency: 'UAH',
   date: new Date().toISOString().slice(0, 10),
@@ -22,6 +25,16 @@ const initialValues: TransactionFormValues = {
 
 export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionModalProps) {
   const [values, setValues] = useState<TransactionFormValues>(initialValues);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  function selectCategory(category: Category) {
+    setSelectedCategory(category);
+    setValues({
+      ...values,
+      categoryId: category.id,
+      categoryName: category.name,
+    });
+  }
 
   return (
     <Modal
@@ -40,9 +53,19 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
         <Select
           id="transaction-kind"
           label="Type"
-          onChange={(event) =>
-            setValues({ ...values, kind: event.target.value as 'income' | 'expense' })
-          }
+          onChange={(event) => {
+            const nextKind = event.target.value as 'income' | 'expense';
+
+            setValues({
+              ...values,
+              categoryId: selectedCategory?.kind === nextKind ? values.categoryId : '',
+              categoryName: selectedCategory?.kind === nextKind ? values.categoryName : '',
+              kind: nextKind,
+            });
+            setSelectedCategory((currentCategory) =>
+              currentCategory?.kind === nextKind ? currentCategory : null,
+            );
+          }}
           value={values.kind}
         >
           <option value="expense">Expense</option>
@@ -63,13 +86,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
           placeholder="250"
           value={values.amount}
         />
-        <Input
-          id="transaction-category"
-          label="Category"
-          onChange={(event) => setValues({ ...values, categoryName: event.target.value })}
-          placeholder="Food"
-          value={values.categoryName}
-        />
+        <CategoryCombobox kind={values.kind} onChange={selectCategory} value={selectedCategory} />
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} variant="ghost">
             Cancel

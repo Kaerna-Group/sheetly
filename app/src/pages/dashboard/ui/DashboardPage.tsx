@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { CreateTransactionModal } from '@features/create-transaction';
-import { GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
+import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
 import { AppLayout } from '@widgets/app-layout';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
@@ -17,6 +17,7 @@ export function DashboardPage() {
       actions={
         <>
           <GoogleConnectionStatus status={googleAuth.status} />
+          <GoogleConnectButton />
         </>
       }
     >

@@ -1,4 +1,5 @@
 export { createGoogleAuthClient } from './api/google-auth.client';
+export { GoogleAuthProvider } from './model/GoogleAuthProvider';
 export { useGoogleAuth } from './model/useGoogleAuth';
 export { GoogleConnectButton } from './ui/GoogleConnectButton';
 export { GoogleConnectionStatus } from './ui/GoogleConnectionStatus';

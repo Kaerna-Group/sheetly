@@ -10,7 +10,7 @@ export function mapFormToTransaction(values: TransactionFormValues): Transaction
   return {
     id: generateTransactionId(),
     amount,
-    categoryId: values.categoryName.toLowerCase().replaceAll(' ', '-'),
+    categoryId: values.categoryId,
     categoryName: values.categoryName,
     comment: values.comment,
     createdAt,

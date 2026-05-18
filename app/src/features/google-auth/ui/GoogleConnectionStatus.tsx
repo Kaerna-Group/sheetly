@@ -7,8 +7,21 @@ type GoogleConnectionStatusProps = {
 };
 
 export function GoogleConnectionStatus({ status }: GoogleConnectionStatusProps) {
-  const label = status === 'connected' ? 'Google connected' : 'Google not connected';
-  const variant = status === 'connected' ? 'success' : 'neutral';
+  const labelByStatus: Record<GoogleAuthState['status'], string> = {
+    connected: 'Google connected',
+    error: 'Google error',
+    idle: 'Google not connected',
+    loading: 'Google connecting',
+  };
+  const variantByStatus: Record<
+    GoogleAuthState['status'],
+    'danger' | 'info' | 'neutral' | 'success'
+  > = {
+    connected: 'success',
+    error: 'danger',
+    idle: 'neutral',
+    loading: 'info',
+  };
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return <Badge variant={variantByStatus[status]}>{labelByStatus[status]}</Badge>;
 }

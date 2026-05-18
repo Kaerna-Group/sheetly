@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { ConnectSpreadsheetModal } from '@features/connect-spreadsheet';
+import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
 import { AppLayout } from '@widgets/app-layout';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
@@ -11,9 +12,17 @@ import { PageHeader } from '@shared/ui/page-header';
 export function SettingsPage() {
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const spreadsheetId = localStorageService.get('spreadsheetId');
+  const googleAuth = useGoogleAuth();
 
   return (
-    <AppLayout>
+    <AppLayout
+      actions={
+        <>
+          <GoogleConnectionStatus status={googleAuth.status} />
+          <GoogleConnectButton />
+        </>
+      }
+    >
       <PageHeader
         description="Manage Sheetly preferences and connections without leaving the main app shell."
         title="Settings"
@@ -36,6 +45,22 @@ export function SettingsPage() {
           <Button onClick={() => setIsConnectOpen(true)} variant="secondary">
             Change connection
           </Button>
+        </div>
+      </Card>
+      <Card>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-950">Google authorization</h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              {googleAuth.isConfigured
+                ? 'Google OAuth client id is configured. Access tokens are kept in memory only.'
+                : 'Set VITE_GOOGLE_CLIENT_ID before using Google authorization.'}
+            </p>
+            {googleAuth.error ? (
+              <p className="mt-2 text-sm text-danger">{googleAuth.error}</p>
+            ) : null}
+          </div>
+          <GoogleConnectButton />
         </div>
       </Card>
       <Card>

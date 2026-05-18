@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Modal } from '@shared/ui/modal';
+import { Toast } from '@shared/ui/toast';
 
 import { useConnectSpreadsheet } from '../model/useConnectSpreadsheet';
 
@@ -13,7 +15,8 @@ type ConnectSpreadsheetModalProps = {
 
 export function ConnectSpreadsheetModal({ isOpen, onClose }: ConnectSpreadsheetModalProps) {
   const [spreadsheetUrl, setSpreadsheetUrl] = useState('');
-  const { connect, error } = useConnectSpreadsheet(onClose);
+  const { connect, connection, error, isChecking } = useConnectSpreadsheet(onClose);
+  const isNeedsAuth = connection.status === 'needs-auth';
 
   return (
     <Modal
@@ -31,18 +34,28 @@ export function ConnectSpreadsheetModal({ isOpen, onClose }: ConnectSpreadsheetM
       >
         <Input
           error={error ?? undefined}
-          hint="Google OAuth will be connected in the next milestone."
+          hint="Connect Google first to verify access immediately."
           id="spreadsheet-url"
           label="Google Sheets URL"
           onChange={(event) => setSpreadsheetUrl(event.target.value)}
           placeholder="https://docs.google.com/spreadsheets/d/..."
           value={spreadsheetUrl}
         />
+        {isNeedsAuth ? (
+          <Toast
+            message="Spreadsheet id was saved locally. Connect Google to verify access and read data."
+            title="Google authorization needed"
+            variant="info"
+          />
+        ) : null}
+        {connection.status === 'checking' ? <Badge variant="info">Checking access</Badge> : null}
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} variant="ghost">
             Cancel
           </Button>
-          <Button type="submit">Save connection</Button>
+          <Button isLoading={isChecking} type="submit">
+            Save connection
+          </Button>
         </div>
       </form>
     </Modal>
