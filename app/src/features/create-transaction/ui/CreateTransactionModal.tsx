@@ -24,7 +24,12 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
   const [values, setValues] = useState<TransactionFormValues>(initialValues);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create transaction">
+    <Modal
+      description="Create a local draft. Sync with Google Sheets is planned for the transactions milestone."
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create transaction"
+    >
       <form
         className="grid gap-4"
         onSubmit={(event) => {
@@ -51,6 +56,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
           value={values.date}
         />
         <Input
+          hint="Amount is stored as a positive value; signed amount is calculated separately."
           id="transaction-amount"
           label="Amount"
           onChange={(event) => setValues({ ...values, amount: event.target.value })}

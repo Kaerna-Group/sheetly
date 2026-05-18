@@ -1,3 +1,5 @@
+import { Badge } from '@shared/ui/badge';
+
 import type { GoogleAuthState } from '../types/google-auth-state.type';
 
 type GoogleConnectionStatusProps = {
@@ -6,6 +8,7 @@ type GoogleConnectionStatusProps = {
 
 export function GoogleConnectionStatus({ status }: GoogleConnectionStatusProps) {
   const label = status === 'connected' ? 'Google connected' : 'Google not connected';
+  const variant = status === 'connected' ? 'success' : 'neutral';
 
-  return <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700">{label}</span>;
+  return <Badge variant={variant}>{label}</Badge>;
 }

@@ -7,10 +7,9 @@ import { routePaths } from '@app/routes/route-paths';
 type AppLayoutProps = {
   actions?: ReactNode;
   children: ReactNode;
-  title: string;
 };
 
-export function AppLayout({ actions, children, title }: AppLayoutProps) {
+export function AppLayout({ actions, children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-zinc-200 bg-white">
@@ -19,7 +18,7 @@ export function AppLayout({ actions, children, title }: AppLayoutProps) {
             <p className="text-xs font-semibold uppercase tracking-wide text-brand">
               {appConfig.name}
             </p>
-            <h1 className="text-xl font-semibold text-zinc-950">{title}</h1>
+            <p className="text-sm text-zinc-600">{appConfig.description}</p>
           </div>
           <nav className="flex items-center gap-2 text-sm">
             <NavLink

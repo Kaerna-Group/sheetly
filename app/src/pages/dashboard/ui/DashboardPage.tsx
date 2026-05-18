@@ -6,6 +6,7 @@ import { AppLayout } from '@widgets/app-layout';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { EmptyState } from '@shared/ui/empty-state';
+import { PageHeader } from '@shared/ui/page-header';
 
 export function DashboardPage() {
   const [isCreateTransactionOpen, setIsCreateTransactionOpen] = useState(false);
@@ -16,11 +17,14 @@ export function DashboardPage() {
       actions={
         <>
           <GoogleConnectionStatus status={googleAuth.status} />
-          <Button onClick={() => setIsCreateTransactionOpen(true)}>New transaction</Button>
         </>
       }
-      title="Dashboard"
     >
+      <PageHeader
+        actions={<Button onClick={() => setIsCreateTransactionOpen(true)}>New transaction</Button>}
+        description="Track income, expenses and balance from your Google Sheets ledger."
+        title="Dashboard"
+      />
       <section className="grid gap-4 md:grid-cols-3">
         <Card>
           <p className="text-sm text-zinc-500">Income</p>

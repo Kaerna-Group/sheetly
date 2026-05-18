@@ -16,7 +16,12 @@ export function ConnectSpreadsheetModal({ isOpen, onClose }: ConnectSpreadsheetM
   const { connect, error } = useConnectSpreadsheet(onClose);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Connect spreadsheet">
+    <Modal
+      description="Paste a Google Sheets URL or raw spreadsheet id. Sheetly stores only the id locally."
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Connect spreadsheet"
+    >
       <form
         className="grid gap-4"
         onSubmit={(event) => {
@@ -25,13 +30,14 @@ export function ConnectSpreadsheetModal({ isOpen, onClose }: ConnectSpreadsheetM
         }}
       >
         <Input
+          error={error ?? undefined}
+          hint="Google OAuth will be connected in the next milestone."
           id="spreadsheet-url"
           label="Google Sheets URL"
           onChange={(event) => setSpreadsheetUrl(event.target.value)}
           placeholder="https://docs.google.com/spreadsheets/d/..."
           value={spreadsheetUrl}
         />
-        {error ? <p className="text-sm text-danger">{error}</p> : null}
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} variant="ghost">
             Cancel
