@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+app/node_modules
+app/dist
+app/coverage
+package-lock.json
+app/package-lock.json

@@ -1,0 +1,16 @@
+{
+  "name": "sheetly-monorepo",
+  "private": true,
+  "workspaces": [
+    "app"
+  ],
+  "scripts": {
+    "dev": "npm --workspace app run dev",
+    "build": "npm --workspace app run build",
+    "lint": "npm --workspace app run lint",
+    "format": "npm --workspace app run format",
+    "format:check": "npm --workspace app run format:check",
+    "typecheck": "npm --workspace app run typecheck",
+    "test": "npm --workspace app run test"
+  }
+}

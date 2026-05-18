@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.local
+*.log
+*.tsbuildinfo
+app/node_modules
+app/dist
+app/coverage
+app/.env
+app/.env.*
+app/*.tsbuildinfo
