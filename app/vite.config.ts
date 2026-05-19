@@ -18,6 +18,19 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      exclude: [
+        'dist/**',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+        'src/**/*.test.{ts,tsx}',
+        'src/**/index.ts',
+      ],
+      include: ['src/**/*.{ts,tsx}'],
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary', 'lcov'],
+      reportsDirectory: './coverage',
+    },
     environment: 'jsdom',
     globals: true,
   },

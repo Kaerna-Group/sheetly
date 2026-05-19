@@ -12,6 +12,7 @@
     "format": "pnpm --filter sheetly run format",
     "format:check": "pnpm --filter sheetly run format:check",
     "typecheck": "pnpm --filter sheetly run typecheck",
-    "test": "pnpm --filter sheetly run test"
+    "test": "pnpm --filter sheetly run test",
+    "test:coverage": "pnpm --filter sheetly run test:coverage"
   }
 }

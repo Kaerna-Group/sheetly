@@ -46,8 +46,31 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
-      - name: Test
-        run: pnpm test
+      - name: Test with coverage
+        run: pnpm run test:coverage
+
+      - name: Add test summary
+        if: always()
+        run: |
+          echo "## Test diagnostics" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Test reporter: Vitest verbose + JUnit" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Coverage reporters: text, html, json-summary, lcov" >> "$GITHUB_STEP_SUMMARY"
+          echo "- JUnit report: \`app/reports/junit.xml\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Coverage artifact: \`app/coverage\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f app/coverage/coverage-summary.json ]; then
+            node -e "const fs=require('node:fs'); const summary=JSON.parse(fs.readFileSync('app/coverage/coverage-summary.json','utf8')).total; const rows=['lines','statements','functions','branches'].map((key)=>'| '+key+' | '+summary[key].pct+'% | '+summary[key].covered+'/'+summary[key].total+' |').join('\n'); console.log('\n### Coverage\n'); console.log('| Metric | Percent | Covered |'); console.log('| --- | ---: | ---: |'); console.log(rows);" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics
+          path: |
+            app/coverage
+            app/reports
+          if-no-files-found: warn
 
       - name: Build
         env:
