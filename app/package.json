@@ -12,7 +12,7 @@
     "format:check": "prettier . --check",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "prepare": "husky"
+    "prepare": "cd .. && husky"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,css,md,yml,yaml}": [

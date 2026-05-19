@@ -1,16 +1,17 @@
 {
   "name": "sheetly-monorepo",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "workspaces": [
     "app"
   ],
   "scripts": {
-    "dev": "npm --workspace app run dev",
-    "build": "npm --workspace app run build",
-    "lint": "npm --workspace app run lint",
-    "format": "npm --workspace app run format",
-    "format:check": "npm --workspace app run format:check",
-    "typecheck": "npm --workspace app run typecheck",
-    "test": "npm --workspace app run test"
+    "dev": "pnpm --filter sheetly run dev",
+    "build": "pnpm --filter sheetly run build",
+    "lint": "pnpm --filter sheetly run lint",
+    "format": "pnpm --filter sheetly run format",
+    "format:check": "pnpm --filter sheetly run format:check",
+    "typecheck": "pnpm --filter sheetly run typecheck",
+    "test": "pnpm --filter sheetly run test"
   }
 }

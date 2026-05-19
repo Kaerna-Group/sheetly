@@ -41,6 +41,8 @@ export const sheetRanges = {
   categories: `${sheetNames.categories}!A:F`,
   categoriesData: `${sheetNames.categories}!A2:F`,
   categoriesHeaders: `${sheetNames.categories}!A1:F1`,
+  ledger: `${sheetNames.ledger}!A:L`,
+  ledgerData: `${sheetNames.ledger}!A2:L`,
   ledgerHeaders: `${sheetNames.ledger}!A1:L1`,
   settingsHeaders: `${sheetNames.settings}!A1:B1`,
   settingsTemplateVersion: `${sheetNames.settings}!A2:B2`,

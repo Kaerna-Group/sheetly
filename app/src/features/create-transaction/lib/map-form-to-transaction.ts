@@ -19,7 +19,7 @@ export function mapFormToTransaction(values: TransactionFormValues): Transaction
     kind: values.kind,
     paymentMethod: values.paymentMethod,
     signedAmount: calculateSignedAmount(values.kind, amount),
-    source: 'local-demo',
-    syncStatus: 'local',
+    source: 'google-sheets',
+    syncStatus: 'synced',
   };
 }
