@@ -4,7 +4,11 @@ import type { Category, CategoryKind } from '@entities/category';
 import { useGoogleAuth } from '@features/google-auth';
 import { localStorageService } from '@shared/lib/storage/local-storage.service';
 
-import { createCategory, readCategories } from '../lib/manage-categories.service';
+import {
+  createCategory,
+  type CategoriesTemplateStatus,
+  readCategories,
+} from '../lib/manage-categories.service';
 
 export function useCategories(kind: CategoryKind) {
   const googleAuth = useGoogleAuth();
@@ -13,6 +17,8 @@ export function useCategories(kind: CategoryKind) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [templateStatus, setTemplateStatus] = useState<CategoriesTemplateStatus>('unknown');
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -20,18 +26,22 @@ export function useCategories(kind: CategoryKind) {
     async function loadCategories() {
       setIsLoading(true);
       setError(null);
+      setWarning(null);
 
       try {
-        const loadedCategories = await readCategories({
+        const result = await readCategories({
           accessToken: googleAuth.accessToken,
           spreadsheetId,
         });
 
         if (isActive) {
-          setCategories(loadedCategories);
+          setCategories(result.categories);
+          setTemplateStatus(result.templateStatus);
+          setWarning(result.warning);
         }
       } catch (caughtError) {
         if (isActive) {
+          setTemplateStatus('unknown');
           setError(
             caughtError instanceof Error ? caughtError.message : 'Could not load categories.',
           );
@@ -51,6 +61,14 @@ export function useCategories(kind: CategoryKind) {
   }, [googleAuth.accessToken, spreadsheetId]);
 
   async function createAndSelectCategory(name: string) {
+    if (templateStatus === 'needs-setup') {
+      setError(
+        warning ??
+          'Spreadsheet template is not ready. Open Settings and run setup before creating categories.',
+      );
+      return null;
+    }
+
     setIsCreating(true);
     setError(null);
 
@@ -84,5 +102,7 @@ export function useCategories(kind: CategoryKind) {
     error,
     isCreating,
     isLoading,
+    templateStatus,
+    warning,
   };
 }

@@ -7,6 +7,11 @@ export {
 } from './google-sheets.errors';
 export { googleSheetsScopes } from './google-sheets.scopes';
 export type {
+  AddSheetRequest,
+  BatchUpdateSpreadsheetRequest,
+  SpreadsheetBatchUpdateRequest,
+} from './types/batch-update-spreadsheet-request.type';
+export type {
   GetSpreadsheetMetadataRequest,
   GoogleSheetsClient,
   ReadRangeRequest,

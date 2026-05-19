@@ -41,4 +41,8 @@ describe('buildComboboxOptions', () => {
       },
     ]);
   });
+
+  it('does not add create option when creation is disabled', () => {
+    expect(buildComboboxOptions({ canCreate: false, inputValue: 'coffee', items })).toEqual([]);
+  });
 });

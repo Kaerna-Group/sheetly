@@ -20,12 +20,14 @@ export function normalizeComboboxValue(value: string) {
 }
 
 type BuildComboboxOptionsParams<TItem extends ComboboxItem> = {
+  canCreate?: boolean;
   getCreateLabel?: (value: string) => string;
   inputValue: string;
   items: TItem[];
 };
 
 export function buildComboboxOptions<TItem extends ComboboxItem>({
+  canCreate = true,
   getCreateLabel = (value) => `Create "${value}"`,
   inputValue,
   items,
@@ -42,7 +44,7 @@ export function buildComboboxOptions<TItem extends ComboboxItem>({
     kind: 'item',
   }));
 
-  if (normalizedInput && !hasExactMatch) {
+  if (canCreate && normalizedInput && !hasExactMatch) {
     options.push({
       id: `create-${normalizedInput}`,
       inputValue: inputValue.trim(),

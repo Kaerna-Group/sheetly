@@ -2,6 +2,8 @@ const googleSheetsApiBaseUrl = 'https://sheets.googleapis.com/v4/spreadsheets';
 
 export const googleSheetsEndpoints = {
   spreadsheet: (spreadsheetId: string) => `${googleSheetsApiBaseUrl}/${spreadsheetId}`,
+  spreadsheetBatchUpdate: (spreadsheetId: string) =>
+    `${googleSheetsApiBaseUrl}/${spreadsheetId}:batchUpdate`,
   values: (spreadsheetId: string, range: string) =>
     `${googleSheetsApiBaseUrl}/${spreadsheetId}/values/${encodeURIComponent(range)}`,
   appendValues: (spreadsheetId: string, range: string) =>

@@ -9,6 +9,7 @@ import {
 } from './build-combobox-options';
 
 type ComboboxProps<TItem extends ComboboxItem> = {
+  canCreate?: boolean;
   disabled?: boolean;
   emptyLabel?: string;
   error?: string;
@@ -23,6 +24,7 @@ type ComboboxProps<TItem extends ComboboxItem> = {
 };
 
 export function Combobox<TItem extends ComboboxItem>({
+  canCreate = true,
   disabled = false,
   emptyLabel = 'No options',
   error,
@@ -41,8 +43,8 @@ export function Combobox<TItem extends ComboboxItem>({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const options = useMemo(
-    () => buildComboboxOptions({ getCreateLabel, inputValue, items }),
-    [getCreateLabel, inputValue, items],
+    () => buildComboboxOptions({ canCreate, getCreateLabel, inputValue, items }),
+    [canCreate, getCreateLabel, inputValue, items],
   );
   const description = error ?? hint;
   const descriptionId = `${generatedId}-description`;

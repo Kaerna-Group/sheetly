@@ -4,15 +4,20 @@ import {
   GoogleSheetsApiError,
   type GoogleSheetsClient,
 } from '@shared/api/google-sheets';
-import { sheetRanges } from '@shared/config/constants/sheet.constants';
+import { sheetNames, sheetRanges } from '@shared/config/constants/sheet.constants';
 
 import { findCategoryDuplicate } from './filter-categories';
 import { generateCategoryId } from './generate-category-id';
 import { mapCategoryToRow, mapRowToCategory } from './category-row.mapper';
 
+export type CategoriesTemplateStatus = 'ready' | 'needs-setup' | 'unknown';
+
 export type ManageCategoriesContext = {
   accessToken: string | null;
-  googleSheetsClient?: Pick<GoogleSheetsClient, 'appendValues' | 'readRange'>;
+  googleSheetsClient?: Pick<
+    GoogleSheetsClient,
+    'appendValues' | 'getSpreadsheetMetadata' | 'readRange'
+  >;
   spreadsheetId: string | null;
 };
 
@@ -22,13 +27,47 @@ export type CreateCategoryParams = ManageCategoriesContext & {
   name: string;
 };
 
+export type ReadCategoriesResult = {
+  categories: Category[];
+  templateStatus: CategoriesTemplateStatus;
+  warning: string | null;
+};
+
+const templateNotReadyMessage =
+  'Spreadsheet template is not ready. Open Settings and run setup before creating categories.';
+
+function hasCategoriesSheet(
+  metadata: Awaited<ReturnType<GoogleSheetsClient['getSpreadsheetMetadata']>>,
+) {
+  return Boolean(
+    metadata.sheets?.some((sheet) => sheet.properties?.title === sheetNames.categories),
+  );
+}
+
 export async function readCategories({
   accessToken,
   googleSheetsClient = createGoogleSheetsClient(),
   spreadsheetId,
-}: ManageCategoriesContext): Promise<Category[]> {
+}: ManageCategoriesContext): Promise<ReadCategoriesResult> {
   if (!accessToken || !spreadsheetId) {
-    return getDefaultCategories();
+    return {
+      categories: getDefaultCategories(),
+      templateStatus: 'unknown',
+      warning: null,
+    };
+  }
+
+  const metadata = await googleSheetsClient.getSpreadsheetMetadata({
+    accessToken,
+    spreadsheetId,
+  });
+
+  if (!hasCategoriesSheet(metadata)) {
+    return {
+      categories: getDefaultCategories(),
+      templateStatus: 'needs-setup',
+      warning: templateNotReadyMessage,
+    };
   }
 
   try {
@@ -41,12 +80,21 @@ export async function readCategories({
       .map(mapRowToCategory)
       .filter((category) => category !== null);
 
-    return remoteCategories.length ? remoteCategories : getDefaultCategories();
+    return {
+      categories: remoteCategories.length ? remoteCategories : getDefaultCategories(),
+      templateStatus: 'ready',
+      warning: null,
+    };
   } catch (error) {
-    if (error instanceof GoogleSheetsApiError && ['not-found', 'unknown'].includes(error.code)) {
-      throw new Error('Spreadsheet template is not ready.', {
-        cause: error,
-      });
+    if (
+      error instanceof GoogleSheetsApiError &&
+      ['template-not-ready', 'unknown'].includes(error.code)
+    ) {
+      return {
+        categories: getDefaultCategories(),
+        templateStatus: 'needs-setup',
+        warning: templateNotReadyMessage,
+      };
     }
 
     throw error;
@@ -72,6 +120,15 @@ export async function createCategory({
     throw new Error('Connect Google and spreadsheet before creating categories.');
   }
 
+  const metadata = await googleSheetsClient.getSpreadsheetMetadata({
+    accessToken,
+    spreadsheetId,
+  });
+
+  if (!hasCategoriesSheet(metadata)) {
+    throw new Error(templateNotReadyMessage);
+  }
+
   const category: Category = {
     id: generateCategoryId(normalizedName, kind),
     name: normalizedName,
@@ -91,7 +148,10 @@ export async function createCategory({
 
     return category;
   } catch (error) {
-    if (error instanceof GoogleSheetsApiError && ['not-found', 'unknown'].includes(error.code)) {
+    if (
+      error instanceof GoogleSheetsApiError &&
+      ['not-found', 'template-not-ready', 'unknown'].includes(error.code)
+    ) {
       throw new Error('Spreadsheet template is not ready.', {
         cause: error,
       });

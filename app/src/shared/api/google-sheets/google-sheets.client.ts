@@ -1,4 +1,5 @@
 import type { AppendValuesRequest } from './types/append-values-request.type';
+import type { BatchUpdateSpreadsheetRequest } from './types/batch-update-spreadsheet-request.type';
 import type { BatchUpdateValuesRequest } from './types/batch-update-request.type';
 import type { SpreadsheetMetadata } from './types/spreadsheet-metadata.type';
 import type { ValueRange } from './types/value-range.type';
@@ -18,6 +19,7 @@ export type GetSpreadsheetMetadataRequest = {
 
 export type GoogleSheetsClient = {
   appendValues: (request: AppendValuesRequest) => Promise<void>;
+  batchUpdateSpreadsheet: (request: BatchUpdateSpreadsheetRequest) => Promise<void>;
   batchUpdateValues: (request: BatchUpdateValuesRequest) => Promise<void>;
   getSpreadsheetMetadata: (request: GetSpreadsheetMetadataRequest) => Promise<SpreadsheetMetadata>;
   readRange: (request: ReadRangeRequest) => Promise<ValueRange>;
@@ -68,6 +70,13 @@ export function createGoogleSheetsClient({
         method: 'POST',
         headers: buildAuthHeaders(accessToken),
         body: JSON.stringify({ values }),
+      });
+    },
+    async batchUpdateSpreadsheet({ accessToken, requests, spreadsheetId }) {
+      await requestJson(fetcher, googleSheetsEndpoints.spreadsheetBatchUpdate(spreadsheetId), {
+        method: 'POST',
+        headers: buildAuthHeaders(accessToken),
+        body: JSON.stringify({ requests }),
       });
     },
     async batchUpdateValues({ accessToken, data, spreadsheetId }) {

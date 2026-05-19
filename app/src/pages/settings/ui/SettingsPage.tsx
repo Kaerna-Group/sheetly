@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { ConnectSpreadsheetModal } from '@features/connect-spreadsheet';
 import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
+import { SetupSpreadsheetButton } from '@features/setup-spreadsheet';
 import { AppLayout } from '@widgets/app-layout';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
@@ -62,6 +63,9 @@ export function SettingsPage() {
           </div>
           <GoogleConnectButton />
         </div>
+      </Card>
+      <Card>
+        <SetupSpreadsheetButton />
       </Card>
       <Card>
         <h2 className="text-lg font-semibold text-zinc-950">Preferences</h2>
