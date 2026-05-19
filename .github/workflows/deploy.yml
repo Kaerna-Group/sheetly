@@ -50,6 +50,8 @@ jobs:
         run: pnpm test
 
       - name: Build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         run: pnpm run build
 
       - name: Configure Pages
