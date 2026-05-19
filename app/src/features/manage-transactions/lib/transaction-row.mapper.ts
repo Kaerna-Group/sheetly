@@ -28,6 +28,10 @@ export function mapTransactionToRow(transaction: Transaction): string[] {
     transaction.createdAt,
     transaction.source,
     transaction.syncStatus,
+    transaction.updatedAt ?? '',
+    transaction.deletedAt ?? '',
+    transaction.containerId ?? '',
+    transaction.containerName ?? '',
   ];
 }
 
@@ -45,6 +49,10 @@ export function mapRowToTransaction(row: string[]): Transaction | null {
     createdAt,
     source,
     syncStatus,
+    updatedAt,
+    deletedAt,
+    containerId,
+    containerName,
   ] = row;
   const amount = readNumber(amountValue);
   const signedAmount = readNumber(signedAmountValue);
@@ -70,6 +78,8 @@ export function mapRowToTransaction(row: string[]): Transaction | null {
     categoryId: normalizeCategoryId(categoryName),
     categoryName,
     comment: comment || undefined,
+    containerId: containerId || undefined,
+    containerName: containerName || undefined,
     createdAt,
     currency,
     date,
@@ -78,5 +88,7 @@ export function mapRowToTransaction(row: string[]): Transaction | null {
     signedAmount,
     source,
     syncStatus,
+    updatedAt: updatedAt || undefined,
+    deletedAt: deletedAt || undefined,
   };
 }

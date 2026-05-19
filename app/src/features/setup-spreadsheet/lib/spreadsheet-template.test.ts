@@ -19,7 +19,7 @@ describe('spreadsheet template helpers', () => {
           },
         ],
       }),
-    ).toEqual(['Categories', 'Summary', 'MonthlyStats', 'CategoryStats', 'Settings']);
+    ).toEqual(['Categories', 'Containers', 'Summary', 'MonthlyStats', 'CategoryStats', 'Settings']);
   });
 
   it('builds addSheet requests', () => {
@@ -40,14 +40,32 @@ describe('spreadsheet template helpers', () => {
     expect(ranges).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          range: 'Ledger!A1:L1',
+          range: 'Ledger!A1:P1',
         }),
         expect.objectContaining({
           range: 'Categories!A2:F',
         }),
         expect.objectContaining({
+          range: 'Containers!A2:G',
+        }),
+        expect.objectContaining({
           range: 'Settings!A2:B2',
-          values: [['templateVersion', '1']],
+          values: [['templateVersion', '2']],
+        }),
+        expect.objectContaining({
+          range: 'Summary!A:B',
+          values: expect.arrayContaining([
+            ['Total Income', '=SUMIF(Ledger!C:C,"income",Ledger!E:E)'],
+            ['Total Expense', '=SUMIF(Ledger!C:C,"expense",Ledger!E:E)'],
+          ]),
+        }),
+        expect.objectContaining({
+          range: 'MonthlyStats!A1:D1',
+          values: [['month', 'income', 'expense', 'balance']],
+        }),
+        expect.objectContaining({
+          range: 'CategoryStats!A1:D1',
+          values: [['category', 'kind', 'total', 'count']],
         }),
       ]),
     );

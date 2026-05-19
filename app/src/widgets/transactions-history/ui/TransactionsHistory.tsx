@@ -4,9 +4,11 @@ import type { Transaction } from '@entities/transaction';
 import {
   createDefaultTransactionFilters,
   filterTransactions,
+  getTransactionContainerOptions,
   getTransactionCategoryOptions,
   type TransactionFilters,
 } from '@features/filter-transactions';
+import { Badge, type BadgeVariant } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { EmptyState } from '@shared/ui/empty-state';
@@ -15,10 +17,16 @@ import { Select } from '@shared/ui/select';
 import { Skeleton } from '@shared/ui/skeleton';
 
 type TransactionsHistoryProps = {
+  containersEnabled?: boolean;
   error: string | null;
   isLoading: boolean;
   onCreateTransaction: () => void;
+  onDeleteTransaction: (transactionId: string) => void | Promise<void>;
+  onEditTransaction: (transaction: Transaction) => void;
   onRefresh: () => void | Promise<void>;
+  onRetrySync: () => void | Promise<void>;
+  isSyncing?: boolean;
+  syncWarning?: string | null;
   transactions: Transaction[];
 };
 
@@ -35,9 +43,22 @@ function formatKind(kind: Transaction['kind']) {
   return kind === 'income' ? 'Income' : 'Expense';
 }
 
+const syncStatusVariants: Record<Transaction['syncStatus'], BadgeVariant> = {
+  failed: 'danger',
+  local: 'neutral',
+  pending: 'warning',
+  synced: 'success',
+  syncing: 'info',
+};
+
+function formatSyncStatus(status: Transaction['syncStatus']) {
+  return status[0].toUpperCase() + status.slice(1);
+}
+
 function hasActiveFilters(filters: TransactionFilters) {
   return Boolean(
     filters.category ||
+    filters.container ||
     filters.dateFrom ||
     filters.dateTo ||
     filters.kind !== 'all' ||
@@ -73,10 +94,16 @@ function TransactionsHistorySkeleton() {
 }
 
 export function TransactionsHistory({
+  containersEnabled = false,
   error,
   isLoading,
+  isSyncing = false,
   onCreateTransaction,
+  onDeleteTransaction,
+  onEditTransaction,
   onRefresh,
+  onRetrySync,
+  syncWarning = null,
   transactions,
 }: TransactionsHistoryProps) {
   const [filters, setFilters] = useState<TransactionFilters>(createDefaultTransactionFilters);
@@ -84,11 +111,18 @@ export function TransactionsHistory({
     () => getTransactionCategoryOptions(transactions),
     [transactions],
   );
+  const containerOptions = useMemo(
+    () => getTransactionContainerOptions(transactions),
+    [transactions],
+  );
   const filteredTransactions = useMemo(
     () => filterTransactions(transactions, filters),
     [filters, transactions],
   );
   const isFiltered = hasActiveFilters(filters);
+  const hasPendingSync = transactions.some((transaction) =>
+    ['failed', 'pending', 'syncing'].includes(transaction.syncStatus),
+  );
 
   function updateFilters(nextFilters: Partial<TransactionFilters>) {
     setFilters((currentFilters) => ({
@@ -135,12 +169,25 @@ export function TransactionsHistory({
               ? 'Refreshing transactions'
               : `${filteredTransactions.length} of ${transactions.length} transactions`}
           </p>
+          {syncWarning ? <p className="mt-1 text-sm text-amber-700">{syncWarning}</p> : null}
         </div>
-        <Button disabled={isLoading} onClick={() => void onRefresh()} variant="secondary">
-          Refresh
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {hasPendingSync ? (
+            <Button
+              disabled={isSyncing}
+              isLoading={isSyncing}
+              onClick={() => void onRetrySync()}
+              variant="primary"
+            >
+              Retry sync
+            </Button>
+          ) : null}
+          <Button disabled={isLoading} onClick={() => void onRefresh()} variant="secondary">
+            Refresh
+          </Button>
+        </div>
       </div>
-      <div className="grid gap-4 border-b border-zinc-200 px-5 py-4 lg:grid-cols-5">
+      <div className="grid gap-4 border-b border-zinc-200 px-5 py-4 lg:grid-cols-6">
         <Input
           id="transactions-date-from"
           label="Date from"
@@ -187,6 +234,21 @@ export function TransactionsHistory({
           placeholder="Comment, method, category"
           value={filters.query}
         />
+        {containersEnabled ? (
+          <Select
+            id="transactions-container"
+            label="Container"
+            onChange={(event) => updateFilters({ container: event.target.value })}
+            value={filters.container}
+          >
+            <option value="">All containers</option>
+            {containerOptions.map((container) => (
+              <option key={container} value={container}>
+                {container}
+              </option>
+            ))}
+          </Select>
+        ) : null}
       </div>
       {isLoading ? (
         <TransactionsHistorySkeleton />
@@ -200,18 +262,21 @@ export function TransactionsHistory({
         />
       ) : (
         <div>
-          <div className="hidden grid-cols-[120px_96px_1fr_140px_160px_1fr] gap-3 border-b border-zinc-200 px-5 py-3 text-xs font-semibold uppercase text-zinc-500 md:grid">
+          <div className="hidden grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] gap-3 border-b border-zinc-200 px-5 py-3 text-xs font-semibold uppercase text-zinc-500 md:grid">
             <span>Date</span>
             <span>Type</span>
             <span>Category</span>
             <span className="text-right">Amount</span>
             <span>Payment method</span>
             <span>Comment</span>
+            <span>Container</span>
+            <span>Status</span>
+            <span className="text-right">Actions</span>
           </div>
           <div className="divide-y divide-zinc-100">
             {filteredTransactions.map((transaction) => (
               <div
-                className="grid gap-2 px-5 py-4 text-sm md:grid-cols-[120px_96px_1fr_140px_160px_1fr] md:items-center md:gap-3"
+                className="grid gap-2 px-5 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3"
                 key={transaction.id}
               >
                 <div className="text-zinc-500">{transaction.date}</div>
@@ -228,6 +293,24 @@ export function TransactionsHistory({
                 </div>
                 <div className="text-zinc-600">{transaction.paymentMethod || '-'}</div>
                 <div className="text-zinc-600">{transaction.comment || '-'}</div>
+                <div className="text-zinc-600">{transaction.containerName || '-'}</div>
+                <div>
+                  <Badge variant={syncStatusVariants[transaction.syncStatus]}>
+                    {formatSyncStatus(transaction.syncStatus)}
+                  </Badge>
+                </div>
+                <div className="flex justify-start gap-2 md:justify-end">
+                  <Button onClick={() => onEditTransaction(transaction)} size="sm" variant="ghost">
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => void onDeleteTransaction(transaction.id)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

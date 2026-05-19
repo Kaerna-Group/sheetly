@@ -35,6 +35,10 @@ describe('transaction row mapper', () => {
       '2026-05-19T10:00:00.000Z',
       'google-sheets',
       'synced',
+      '',
+      '',
+      '',
+      '',
     ]);
   });
 
@@ -53,8 +57,34 @@ describe('transaction row mapper', () => {
         '2026-05-19T10:00:00.000Z',
         'google-sheets',
         'synced',
+        '',
+        '',
       ]),
     ).toEqual(transaction);
+  });
+
+  it('maps optional updated and deleted timestamps', () => {
+    expect(
+      mapRowToTransaction([
+        'tx-1',
+        '2026-05-19',
+        'expense',
+        'Food',
+        '250',
+        '-250',
+        'UAH',
+        'Card',
+        'Lunch',
+        '2026-05-19T10:00:00.000Z',
+        'google-sheets',
+        'synced',
+        '2026-05-20T10:00:00.000Z',
+        '2026-05-21T10:00:00.000Z',
+      ]),
+    ).toMatchObject({
+      deletedAt: '2026-05-21T10:00:00.000Z',
+      updatedAt: '2026-05-20T10:00:00.000Z',
+    });
   });
 
   it('skips invalid rows', () => {

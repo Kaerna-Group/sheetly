@@ -7,6 +7,7 @@ import {
   buildTemplateValueRanges,
   getMissingSheetNames,
 } from './spreadsheet-template';
+import { buildTemplateFormattingRequests } from './spreadsheet-template-formatting';
 
 export type SetupSpreadsheetParams = {
   accessToken: string;
@@ -59,6 +60,13 @@ export async function setupSpreadsheet({
     });
   }
 
+  const formattingMetadata = missingSheetNames.length
+    ? await googleSheetsClient.getSpreadsheetMetadata({
+        accessToken,
+        spreadsheetId,
+      })
+    : metadata;
+
   const includeDefaultCategories = !(await hasExistingCategories({
     accessToken,
     googleSheetsClient,
@@ -70,6 +78,16 @@ export async function setupSpreadsheet({
     data: buildTemplateValueRanges(includeDefaultCategories),
     spreadsheetId,
   });
+
+  const formattingRequests = buildTemplateFormattingRequests(formattingMetadata);
+
+  if (formattingRequests.length) {
+    await googleSheetsClient.batchUpdateSpreadsheet({
+      accessToken,
+      requests: formattingRequests,
+      spreadsheetId,
+    });
+  }
 
   return {
     createdSheets: [...missingSheetNames],

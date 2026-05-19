@@ -13,13 +13,15 @@ export function mapFormToTransaction(values: TransactionFormValues): Transaction
     categoryId: values.categoryId,
     categoryName: values.categoryName,
     comment: values.comment,
+    containerId: values.containerId,
+    containerName: values.containerName,
     createdAt,
     currency: values.currency,
     date: values.date,
     kind: values.kind,
     paymentMethod: values.paymentMethod,
     signedAmount: calculateSignedAmount(values.kind, amount),
-    source: 'google-sheets',
-    syncStatus: 'synced',
+    source: 'offline-queue',
+    syncStatus: 'pending',
   };
 }

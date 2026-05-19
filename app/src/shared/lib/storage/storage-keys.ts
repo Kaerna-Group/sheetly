@@ -4,4 +4,6 @@ export type LocalStorageKey =
   | 'currency'
   | 'theme'
   | 'language'
-  | 'lastSelectedCategory';
+  | 'lastSelectedCategory'
+  | 'containersEnabled'
+  | 'lastSelectedContainerId';

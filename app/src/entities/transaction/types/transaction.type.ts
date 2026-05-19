@@ -14,7 +14,10 @@ export type Transaction = {
   currency: string;
   paymentMethod?: string;
   comment?: string;
+  containerId?: string;
+  containerName?: string;
   createdAt: string;
+  deletedAt?: string;
   updatedAt?: string;
   syncedAt?: string;
   source: TransactionSource;

@@ -4,6 +4,7 @@ export type TransactionKindFilter = TransactionKind | 'all';
 
 export type TransactionFilters = {
   category: string;
+  container: string;
   dateFrom: string;
   dateTo: string;
   kind: TransactionKindFilter;

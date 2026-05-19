@@ -5,6 +5,8 @@ export type TransactionFormValues = {
   categoryId: string;
   categoryName: string;
   comment?: string;
+  containerId?: string;
+  containerName?: string;
   currency: string;
   date: string;
   kind: TransactionKind;

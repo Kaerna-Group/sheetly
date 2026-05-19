@@ -5,6 +5,7 @@ import type { TransactionFilters } from '../types/transaction-filters.type';
 export function createDefaultTransactionFilters(): TransactionFilters {
   return {
     category: '',
+    container: '',
     dateFrom: '',
     dateTo: '',
     kind: 'all',
@@ -57,6 +58,10 @@ export function filterTransactions(
       return false;
     }
 
+    if (filters.container && transaction.containerName !== filters.container) {
+      return false;
+    }
+
     return matchesQuery(transaction, filters.query);
   });
 }
@@ -64,5 +69,11 @@ export function filterTransactions(
 export function getTransactionCategoryOptions(transactions: Transaction[]) {
   return [...new Set(transactions.map((transaction) => transaction.categoryName))]
     .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+export function getTransactionContainerOptions(transactions: Transaction[]) {
+  return [...new Set(transactions.map((transaction) => transaction.containerName))]
+    .filter((containerName): containerName is string => Boolean(containerName))
     .sort((left, right) => left.localeCompare(right));
 }

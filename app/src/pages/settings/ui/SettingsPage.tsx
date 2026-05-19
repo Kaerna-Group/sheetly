@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { ConnectSpreadsheetModal } from '@features/connect-spreadsheet';
 import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
+import { ManageContainersModal } from '@features/manage-containers';
 import { SetupSpreadsheetButton } from '@features/setup-spreadsheet';
 import { AppLayout } from '@widgets/app-layout';
 import { Badge } from '@shared/ui/badge';
@@ -12,8 +13,17 @@ import { PageHeader } from '@shared/ui/page-header';
 
 export function SettingsPage() {
   const [isConnectOpen, setIsConnectOpen] = useState(false);
+  const [isContainersOpen, setIsContainersOpen] = useState(false);
+  const [containersEnabled, setContainersEnabled] = useState(
+    localStorageService.get('containersEnabled') === 'true',
+  );
   const spreadsheetId = localStorageService.get('spreadsheetId');
   const googleAuth = useGoogleAuth();
+
+  function toggleContainers(enabled: boolean) {
+    setContainersEnabled(enabled);
+    localStorageService.set('containersEnabled', String(enabled));
+  }
 
   return (
     <AppLayout
@@ -68,12 +78,43 @@ export function SettingsPage() {
         <SetupSpreadsheetButton />
       </Card>
       <Card>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-zinc-950">Containers</h2>
+              <Badge variant={containersEnabled ? 'success' : 'neutral'}>
+                {containersEnabled ? 'Enabled' : 'Disabled'}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-zinc-600">
+              Containers are separate money stores used by transactions. When enabled, every new
+              transaction requires one.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+              <input
+                checked={containersEnabled}
+                className="h-4 w-4 accent-brand"
+                onChange={(event) => toggleContainers(event.target.checked)}
+                type="checkbox"
+              />
+              Enable containers
+            </label>
+            <Button onClick={() => setIsContainersOpen(true)} variant="secondary">
+              Manage containers
+            </Button>
+          </div>
+        </div>
+      </Card>
+      <Card>
         <h2 className="text-lg font-semibold text-zinc-950">Preferences</h2>
         <p className="mt-1 text-sm text-zinc-600">
           Theme, currency and language settings are reserved for the UX Polish milestone.
         </p>
       </Card>
       <ConnectSpreadsheetModal isOpen={isConnectOpen} onClose={() => setIsConnectOpen(false)} />
+      <ManageContainersModal isOpen={isContainersOpen} onClose={() => setIsContainersOpen(false)} />
     </AppLayout>
   );
 }

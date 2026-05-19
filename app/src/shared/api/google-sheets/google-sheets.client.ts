@@ -23,6 +23,7 @@ export type GoogleSheetsClient = {
   batchUpdateValues: (request: BatchUpdateValuesRequest) => Promise<void>;
   getSpreadsheetMetadata: (request: GetSpreadsheetMetadataRequest) => Promise<SpreadsheetMetadata>;
   readRange: (request: ReadRangeRequest) => Promise<ValueRange>;
+  updateValues: (request: AppendValuesRequest) => Promise<void>;
 };
 
 type CreateGoogleSheetsClientParams = {
@@ -105,6 +106,16 @@ export function createGoogleSheetsClient({
       return requestJson<ValueRange>(fetcher, googleSheetsEndpoints.values(spreadsheetId, range), {
         method: 'GET',
         headers: buildAuthHeaders(accessToken),
+      });
+    },
+    async updateValues({ accessToken, range, spreadsheetId, values }) {
+      const url = new URL(googleSheetsEndpoints.values(spreadsheetId, range));
+      url.searchParams.set('valueInputOption', valueInputOption);
+
+      await requestJson(fetcher, url.toString(), {
+        method: 'PUT',
+        headers: buildAuthHeaders(accessToken),
+        body: JSON.stringify({ values }),
       });
     },
   };

@@ -7,16 +7,36 @@ describe('setupSpreadsheet', () => {
     const googleSheetsClient = {
       batchUpdateSpreadsheet: vi.fn().mockResolvedValue(undefined),
       batchUpdateValues: vi.fn().mockResolvedValue(undefined),
-      getSpreadsheetMetadata: vi.fn().mockResolvedValue({
-        spreadsheetId: 'sheet-id',
-        sheets: [
-          {
-            properties: {
-              title: 'Ledger',
+      getSpreadsheetMetadata: vi
+        .fn()
+        .mockResolvedValueOnce({
+          spreadsheetId: 'sheet-id',
+          sheets: [
+            {
+              properties: {
+                sheetId: 1,
+                title: 'Ledger',
+              },
             },
-          },
-        ],
-      }),
+          ],
+        })
+        .mockResolvedValueOnce({
+          spreadsheetId: 'sheet-id',
+          sheets: [
+            'Ledger',
+            'Categories',
+            'Containers',
+            'Summary',
+            'MonthlyStats',
+            'CategoryStats',
+            'Settings',
+          ].map((title, index) => ({
+            properties: {
+              sheetId: index + 1,
+              title,
+            },
+          })),
+        }),
       readRange: vi.fn().mockResolvedValue({
         range: 'Categories!A2:F',
         values: [],
@@ -30,10 +50,17 @@ describe('setupSpreadsheet', () => {
         spreadsheetId: 'sheet-id',
       }),
     ).resolves.toEqual({
-      createdSheets: ['Categories', 'Summary', 'MonthlyStats', 'CategoryStats', 'Settings'],
+      createdSheets: [
+        'Categories',
+        'Containers',
+        'Summary',
+        'MonthlyStats',
+        'CategoryStats',
+        'Settings',
+      ],
       status: 'ready',
     });
-    expect(googleSheetsClient.batchUpdateSpreadsheet).toHaveBeenCalledWith({
+    expect(googleSheetsClient.batchUpdateSpreadsheet).toHaveBeenNthCalledWith(1, {
       accessToken: 'token',
       requests: expect.arrayContaining([
         {
@@ -46,14 +73,29 @@ describe('setupSpreadsheet', () => {
       ]),
       spreadsheetId: 'sheet-id',
     });
+    expect(googleSheetsClient.batchUpdateSpreadsheet).toHaveBeenNthCalledWith(2, {
+      accessToken: 'token',
+      requests: expect.arrayContaining([
+        expect.objectContaining({
+          repeatCell: expect.any(Object),
+        }),
+        expect.objectContaining({
+          updateDimensionProperties: expect.any(Object),
+        }),
+      ]),
+      spreadsheetId: 'sheet-id',
+    });
     expect(googleSheetsClient.batchUpdateValues).toHaveBeenCalledWith({
       accessToken: 'token',
       data: expect.arrayContaining([
         expect.objectContaining({
-          range: 'Ledger!A1:L1',
+          range: 'Ledger!A1:P1',
         }),
         expect.objectContaining({
           range: 'Categories!A2:F',
+        }),
+        expect.objectContaining({
+          range: 'Containers!A2:G',
         }),
       ]),
       spreadsheetId: 'sheet-id',
@@ -69,12 +111,14 @@ describe('setupSpreadsheet', () => {
         sheets: [
           'Ledger',
           'Categories',
+          'Containers',
           'Summary',
           'MonthlyStats',
           'CategoryStats',
           'Settings',
-        ].map((title) => ({
+        ].map((title, index) => ({
           properties: {
+            sheetId: index + 1,
             title,
           },
         })),
@@ -91,7 +135,15 @@ describe('setupSpreadsheet', () => {
       spreadsheetId: 'sheet-id',
     });
 
-    expect(googleSheetsClient.batchUpdateSpreadsheet).not.toHaveBeenCalled();
+    expect(googleSheetsClient.batchUpdateSpreadsheet).toHaveBeenCalledWith({
+      accessToken: 'token',
+      requests: expect.arrayContaining([
+        expect.objectContaining({
+          setBasicFilter: expect.any(Object),
+        }),
+      ]),
+      spreadsheetId: 'sheet-id',
+    });
     expect(googleSheetsClient.batchUpdateValues.mock.calls[0][0].data).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({

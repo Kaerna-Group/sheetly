@@ -84,6 +84,28 @@ describe('createGoogleSheetsClient', () => {
     );
   });
 
+  it('updates values with USER_ENTERED input option', async () => {
+    const fetcher = vi.fn().mockResolvedValue(createJsonResponse({}));
+    const client = createGoogleSheetsClient({ fetcher });
+
+    await client.updateValues({
+      accessToken: 'token',
+      range: 'Ledger!A2:P2',
+      spreadsheetId: 'sheet-id',
+      values: [['tx-1']],
+    });
+
+    const [url, init] = fetcher.mock.calls[0];
+
+    expect(url).toBe(
+      'https://sheets.googleapis.com/v4/spreadsheets/sheet-id/values/Ledger!A2%3AP2?valueInputOption=USER_ENTERED',
+    );
+    expect(init).toMatchObject({
+      method: 'PUT',
+    });
+    expect(init.body).toBe(JSON.stringify({ values: [['tx-1']] }));
+  });
+
   it('gets spreadsheet metadata', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       createJsonResponse({

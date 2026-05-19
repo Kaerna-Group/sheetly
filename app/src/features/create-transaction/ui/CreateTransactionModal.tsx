@@ -1,23 +1,31 @@
 import { useState } from 'react';
 
+import type { CurrencyCode } from '@entities/app-settings';
 import type { Category } from '@entities/category';
+import type { Container } from '@entities/container';
 import type { Transaction } from '@entities/transaction';
 import { CategoryCombobox } from '@features/manage-categories';
+import { ContainerCombobox } from '@features/manage-containers';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { localStorageService } from '@shared/lib/storage/local-storage.service';
 import { Modal } from '@shared/ui/modal';
 import { Select } from '@shared/ui/select';
 
 import { mapFormToTransaction } from '../lib/map-form-to-transaction';
-import { transactionFormSchema } from '../model/transaction-form.schema';
+import { createTransactionFormSchema } from '../model/transaction-form.schema';
 import type { TransactionFormValues } from '../types/transaction-form-values.type';
 
 type CreateTransactionModalProps = {
   error?: string | null;
+  containersEnabled?: boolean;
+  initialTransaction?: Transaction | null;
+  initialContainer?: Container | null;
   isOpen: boolean;
   onClose: () => void;
   onCreate: (transaction: Transaction) => Promise<boolean>;
   isCreating?: boolean;
+  mode?: 'create' | 'edit';
 };
 
 const initialValues: TransactionFormValues = {
@@ -29,17 +37,71 @@ const initialValues: TransactionFormValues = {
   kind: 'expense',
   paymentMethod: '',
   comment: '',
+  containerId: '',
+  containerName: '',
 };
 
+function mapTransactionToFormValues(transaction: Transaction): TransactionFormValues {
+  return {
+    amount: String(transaction.amount),
+    categoryId: transaction.categoryId,
+    categoryName: transaction.categoryName,
+    comment: transaction.comment ?? '',
+    containerId: transaction.containerId ?? '',
+    containerName: transaction.containerName ?? '',
+    currency: transaction.currency,
+    date: transaction.date,
+    kind: transaction.kind,
+    paymentMethod: transaction.paymentMethod ?? '',
+  };
+}
+
 export function CreateTransactionModal({
+  containersEnabled = false,
   error,
+  initialContainer = null,
+  initialTransaction = null,
   isCreating = false,
   isOpen,
+  mode = 'create',
   onClose,
   onCreate,
 }: CreateTransactionModalProps) {
-  const [values, setValues] = useState<TransactionFormValues>(initialValues);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [values, setValues] = useState<TransactionFormValues>(() =>
+    initialTransaction
+      ? mapTransactionToFormValues(initialTransaction)
+      : {
+          ...initialValues,
+          containerId: initialContainer?.id ?? '',
+          containerName: initialContainer?.name ?? '',
+          currency: initialContainer?.currency ?? initialValues.currency,
+        },
+  );
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(() =>
+    initialTransaction
+      ? {
+          color: '#6366f1',
+          icon: 'tag',
+          id: initialTransaction.categoryId,
+          isDefault: false,
+          kind: initialTransaction.kind,
+          name: initialTransaction.categoryName,
+        }
+      : null,
+  );
+  const [selectedContainer, setSelectedContainer] = useState<Container | null>(() =>
+    initialTransaction?.containerId && initialTransaction.containerName
+      ? {
+          color: '#6366f1',
+          createdAt: initialTransaction.createdAt,
+          currency: initialTransaction.currency as CurrencyCode,
+          icon: 'wallet',
+          id: initialTransaction.containerId,
+          isDefault: false,
+          name: initialTransaction.containerName,
+        }
+      : initialContainer,
+  );
   const [formError, setFormError] = useState<string | null>(null);
 
   function selectCategory(category: Category) {
@@ -51,21 +113,41 @@ export function CreateTransactionModal({
     });
   }
 
+  function selectContainer(container: Container) {
+    setSelectedContainer(container);
+    setValues({
+      ...values,
+      containerId: container.id,
+      containerName: container.name,
+      currency: container.currency,
+    });
+  }
+
   const visibleError = formError ?? error;
 
   async function submitForm() {
     setFormError(null);
-    const parsedValues = transactionFormSchema.safeParse(values);
+    const parsedValues = createTransactionFormSchema(containersEnabled).safeParse(values);
 
     if (!parsedValues.success) {
       setFormError(parsedValues.error.issues[0]?.message ?? 'Check transaction form.');
       return;
     }
 
-    const transaction = mapFormToTransaction(parsedValues.data);
+    const mappedTransaction = mapFormToTransaction(parsedValues.data);
+    const transaction = {
+      ...mappedTransaction,
+      createdAt: initialTransaction?.createdAt ?? new Date().toISOString(),
+      id: initialTransaction?.id ?? mappedTransaction.id,
+      updatedAt: initialTransaction ? new Date().toISOString() : undefined,
+    };
     const isCreated = await onCreate(transaction);
 
     if (isCreated) {
+      if (selectedContainer) {
+        localStorageService.set('lastSelectedContainerId', selectedContainer.id);
+      }
+
       setValues({
         ...initialValues,
         date: new Date().toISOString().slice(0, 10),
@@ -80,7 +162,7 @@ export function CreateTransactionModal({
       description="Create a transaction and sync it to your Google Sheets Ledger."
       isOpen={isOpen}
       onClose={onClose}
-      title="Create transaction"
+      title={mode === 'edit' ? 'Edit transaction' : 'Create transaction'}
     >
       <form
         className="grid gap-4"
@@ -143,6 +225,13 @@ export function CreateTransactionModal({
           value={values.amount}
         />
         <CategoryCombobox kind={values.kind} onChange={selectCategory} value={selectedCategory} />
+        {containersEnabled ? (
+          <ContainerCombobox
+            currency={values.currency as CurrencyCode}
+            onChange={selectContainer}
+            value={selectedContainer}
+          />
+        ) : null}
         <Input
           id="transaction-payment-method"
           label="Payment method"
@@ -162,7 +251,7 @@ export function CreateTransactionModal({
             Cancel
           </Button>
           <Button isLoading={isCreating} type="submit">
-            Create transaction
+            {mode === 'edit' ? 'Save transaction' : 'Create transaction'}
           </Button>
         </div>
       </form>

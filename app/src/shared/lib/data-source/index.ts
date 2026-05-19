@@ -1,2 +1,7 @@
 export { createLocalDemoDataSource } from './local-demo-data-source';
-export type { FinanceDataSource } from './data-source.type';
+export type {
+  FinanceDataSource,
+  SyncQueueItem,
+  SyncQueueOperation,
+  SyncResult,
+} from './data-source.type';

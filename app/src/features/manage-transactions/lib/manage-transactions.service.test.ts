@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Transaction } from '@entities/transaction';
 
-import { createTransaction, readTransactions } from './manage-transactions.service';
+import {
+  createTransaction,
+  readTransactions,
+  softDeleteTransaction,
+  updateTransaction,
+} from './manage-transactions.service';
 
 const metadataWithLedger = {
   spreadsheetId: 'sheet-id',
@@ -48,6 +53,8 @@ describe('manage transactions service', () => {
           '2026-05-19T10:00:00.000Z',
           'google-sheets',
           'synced',
+          '',
+          '',
         ],
       ],
     });
@@ -59,6 +66,7 @@ describe('manage transactions service', () => {
           appendValues: vi.fn(),
           getSpreadsheetMetadata: vi.fn().mockResolvedValue(metadataWithLedger),
           readRange,
+          updateValues: vi.fn(),
         },
         spreadsheetId: 'sheet-id',
       }),
@@ -66,7 +74,7 @@ describe('manage transactions service', () => {
 
     expect(readRange).toHaveBeenCalledWith({
       accessToken: 'token',
-      range: 'Ledger!A2:L',
+      range: 'Ledger!A2:P',
       spreadsheetId: 'sheet-id',
     });
   });
@@ -81,15 +89,19 @@ describe('manage transactions service', () => {
           appendValues,
           getSpreadsheetMetadata: vi.fn().mockResolvedValue(metadataWithLedger),
           readRange: vi.fn(),
+          updateValues: vi.fn(),
         },
         spreadsheetId: 'sheet-id',
         transaction,
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toMatchObject({
+      id: 'tx-1',
+      syncStatus: 'synced',
+    });
 
     expect(appendValues).toHaveBeenCalledWith({
       accessToken: 'token',
-      range: 'Ledger!A:L',
+      range: 'Ledger!A:P',
       spreadsheetId: 'sheet-id',
       values: [
         [
@@ -105,9 +117,93 @@ describe('manage transactions service', () => {
           '2026-05-19T10:00:00.000Z',
           'google-sheets',
           'synced',
+          '',
+          '',
+          '',
+          '',
         ],
       ],
     });
+  });
+
+  it('updates transactions in Ledger by id', async () => {
+    const updateValues = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      updateTransaction({
+        accessToken: 'token',
+        googleSheetsClient: {
+          appendValues: vi.fn(),
+          getSpreadsheetMetadata: vi.fn().mockResolvedValue(metadataWithLedger),
+          readRange: vi.fn().mockResolvedValue({
+            values: [
+              [
+                'tx-1',
+                '2026-05-19',
+                'expense',
+                'Food',
+                '250',
+                '-250',
+                'UAH',
+                'Card',
+                'Lunch',
+                '2026-05-19T10:00:00.000Z',
+                'google-sheets',
+                'synced',
+              ],
+            ],
+          }),
+          updateValues,
+        },
+        spreadsheetId: 'sheet-id',
+        transaction,
+      }),
+    ).resolves.toMatchObject({
+      id: 'tx-1',
+      syncStatus: 'synced',
+    });
+
+    expect(updateValues.mock.calls[0][0]).toMatchObject({
+      range: 'Ledger!A2:P2',
+      spreadsheetId: 'sheet-id',
+    });
+  });
+
+  it('soft deletes transactions in Ledger by id', async () => {
+    const updateValues = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      softDeleteTransaction({
+        accessToken: 'token',
+        googleSheetsClient: {
+          appendValues: vi.fn(),
+          getSpreadsheetMetadata: vi.fn().mockResolvedValue(metadataWithLedger),
+          readRange: vi.fn().mockResolvedValue({
+            values: [
+              [
+                'tx-1',
+                '2026-05-19',
+                'expense',
+                'Food',
+                '250',
+                '-250',
+                'UAH',
+                'Card',
+                'Lunch',
+                '2026-05-19T10:00:00.000Z',
+                'google-sheets',
+                'synced',
+              ],
+            ],
+          }),
+          updateValues,
+        },
+        spreadsheetId: 'sheet-id',
+        transactionId: 'tx-1',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(updateValues.mock.calls[0][0].values[0][13]).toBeTruthy();
   });
 
   it('requires Google context', async () => {
@@ -130,6 +226,7 @@ describe('manage transactions service', () => {
             sheets: [],
           }),
           readRange: vi.fn(),
+          updateValues: vi.fn(),
         },
         spreadsheetId: 'sheet-id',
         transaction,
