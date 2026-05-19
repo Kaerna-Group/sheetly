@@ -94,11 +94,18 @@ export function createLocalQueueDataSource(
       for (const item of syncQueue) {
         try {
           if (item.operation === 'create' && item.transaction) {
-            const syncedTransaction = await remoteDataSource.createTransaction({
-              ...item.transaction,
-              source: 'google-sheets',
-              syncStatus: 'synced',
-            });
+            const remoteTransactions =
+              (await Promise.resolve(remoteDataSource.getTransactions()).catch(() => [])) ?? [];
+            const existingTransaction = remoteTransactions.find(
+              (transaction) => transaction.id === item.transactionId,
+            );
+            const syncedTransaction =
+              existingTransaction ??
+              (await remoteDataSource.createTransaction({
+                ...item.transaction,
+                source: 'google-sheets',
+                syncStatus: 'synced',
+              }));
 
             await offlineTransactionsStorage.upsertCachedTransaction(syncedTransaction);
           }

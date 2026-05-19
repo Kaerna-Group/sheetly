@@ -1,28 +1,112 @@
-import { useState } from 'react';
+import { type ChangeEvent, useRef, useState } from 'react';
 
 import { ConnectSpreadsheetModal } from '@features/connect-spreadsheet';
 import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
 import { ManageContainersModal } from '@features/manage-containers';
+import { offlineTransactionsStorage, useOfflineSyncStatus } from '@features/manage-transactions';
 import { SetupSpreadsheetButton } from '@features/setup-spreadsheet';
 import { AppLayout } from '@widgets/app-layout';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
+import { ConfirmModal } from '@shared/ui/confirm-modal';
+import { Input } from '@shared/ui/input';
 import { localStorageService } from '@shared/lib/storage/local-storage.service';
 import { PageHeader } from '@shared/ui/page-header';
+import { Select } from '@shared/ui/select';
+import { Toast } from '@shared/ui/toast';
 
 export function SettingsPage() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const [isContainersOpen, setIsContainersOpen] = useState(false);
+  const [isResetOpen, setIsResetOpen] = useState(false);
   const [containersEnabled, setContainersEnabled] = useState(
     localStorageService.get('containersEnabled') === 'true',
   );
+  const [currency, setCurrency] = useState(localStorageService.get('currency') ?? 'UAH');
+  const [language, setLanguage] = useState(localStorageService.get('language') ?? 'en');
+  const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
+  const [theme, setTheme] = useState(localStorageService.get('theme') ?? 'system');
   const spreadsheetId = localStorageService.get('spreadsheetId');
   const googleAuth = useGoogleAuth();
+  const { refresh: refreshSyncStatus, status: syncStatus } = useOfflineSyncStatus();
 
   function toggleContainers(enabled: boolean) {
     setContainersEnabled(enabled);
     localStorageService.set('containersEnabled', String(enabled));
+  }
+
+  function updatePreference(key: 'currency' | 'language' | 'theme', value: string) {
+    localStorageService.set(key, value);
+    setSettingsMessage('Preferences saved locally.');
+
+    if (key === 'currency') {
+      setCurrency(value);
+    }
+
+    if (key === 'language') {
+      setLanguage(value);
+    }
+
+    if (key === 'theme') {
+      setTheme(value);
+    }
+  }
+
+  function exportSettings() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      settings: localStorageService.exportKnownKeys(),
+      version: 1,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = url;
+    anchor.download = `sheetly-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setSettingsMessage('Settings export created.');
+  }
+
+  async function importSettings(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(await file.text()) as {
+        settings?: ReturnType<typeof localStorageService.exportKnownKeys>;
+      };
+
+      if (!payload.settings) {
+        throw new Error('Invalid settings file.');
+      }
+
+      localStorageService.importKnownKeys(payload.settings);
+      setContainersEnabled(localStorageService.get('containersEnabled') === 'true');
+      setCurrency(localStorageService.get('currency') ?? 'UAH');
+      setLanguage(localStorageService.get('language') ?? 'en');
+      setTheme(localStorageService.get('theme') ?? 'system');
+      setSettingsMessage('Settings imported. Reload the page if connection state looks stale.');
+    } catch (error) {
+      setSettingsMessage(error instanceof Error ? error.message : 'Could not import settings.');
+    } finally {
+      event.target.value = '';
+    }
+  }
+
+  async function resetOfflineCache() {
+    await offlineTransactionsStorage.resetOfflineData();
+    await refreshSyncStatus();
+    setIsResetOpen(false);
+    setSettingsMessage('Offline cache and sync queues were reset.');
   }
 
   return (
@@ -38,6 +122,7 @@ export function SettingsPage() {
         description="Manage Sheetly preferences and connections without leaving the main app shell."
         title="Settings"
       />
+      {settingsMessage ? <Toast message={settingsMessage} variant="info" /> : null}
       <Card>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -109,12 +194,87 @@ export function SettingsPage() {
       </Card>
       <Card>
         <h2 className="text-lg font-semibold text-zinc-950">Preferences</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Theme, currency and language settings are reserved for the UX Polish milestone.
-        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <Input
+            hint="Used as the fallback currency in forms."
+            id="default-currency"
+            label="Default currency"
+            maxLength={3}
+            onChange={(event) => updatePreference('currency', event.target.value.toUpperCase())}
+            value={currency}
+          />
+          <Select
+            hint="Stored locally for upcoming localization polish."
+            id="language"
+            label="Language"
+            onChange={(event) => updatePreference('language', event.target.value)}
+            value={language}
+          >
+            <option value="en">English</option>
+            <option value="ru">Russian</option>
+            <option value="uk">Ukrainian</option>
+          </Select>
+          <Select
+            hint="Theme wiring is prepared for the next UI polish pass."
+            id="theme"
+            label="Theme"
+            onChange={(event) => updatePreference('theme', event.target.value)}
+            value={theme}
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </Select>
+        </div>
+      </Card>
+      <Card>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-950">Diagnostics</h2>
+            <div className="mt-3 grid gap-2 text-sm text-zinc-600">
+              <p>Spreadsheet: {spreadsheetId ?? 'not connected'}</p>
+              <p>Google: {googleAuth.status}</p>
+              <p>Network: {syncStatus.isOnline ? 'online' : 'offline'}</p>
+              <p>Cached transactions: {syncStatus.cachedTransactions}</p>
+              <p>
+                Queue: {syncStatus.pending} pending, {syncStatus.failed} failed
+              </p>
+              <p>Last sync: {syncStatus.lastSuccessfulSyncAt ?? 'never'}</p>
+              {syncStatus.lastError ? (
+                <p className="text-danger">Last sync error: {syncStatus.lastError}</p>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={exportSettings} variant="secondary">
+              Export settings
+            </Button>
+            <Button onClick={() => fileInputRef.current?.click()} variant="secondary">
+              Import settings
+            </Button>
+            <Button onClick={() => setIsResetOpen(true)} variant="danger">
+              Reset cache
+            </Button>
+            <input
+              accept="application/json"
+              className="hidden"
+              onChange={(event) => void importSettings(event)}
+              ref={fileInputRef}
+              type="file"
+            />
+          </div>
+        </div>
       </Card>
       <ConnectSpreadsheetModal isOpen={isConnectOpen} onClose={() => setIsConnectOpen(false)} />
       <ManageContainersModal isOpen={isContainersOpen} onClose={() => setIsContainersOpen(false)} />
+      <ConfirmModal
+        confirmLabel="Reset cache"
+        description="This clears cached transactions and sync queues from this browser. Google Sheets data stays untouched."
+        isOpen={isResetOpen}
+        onClose={() => setIsResetOpen(false)}
+        onConfirm={() => void resetOfflineCache()}
+        title="Reset offline cache?"
+      />
     </AppLayout>
   );
 }

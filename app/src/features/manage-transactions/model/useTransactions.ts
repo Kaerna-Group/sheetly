@@ -205,7 +205,7 @@ export function useTransactions() {
     }
   }
 
-  async function retrySync() {
+  const retrySync = useCallback(async () => {
     setIsSyncing(true);
     setError(null);
 
@@ -225,7 +225,23 @@ export function useTransactions() {
     } finally {
       setIsSyncing(false);
     }
-  }
+  }, [localDataSource, refresh]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    function handleOnline() {
+      if (remoteDataSource()) {
+        void retrySync();
+      }
+    }
+
+    window.addEventListener('online', handleOnline);
+
+    return () => window.removeEventListener('online', handleOnline);
+  }, [remoteDataSource, retrySync]);
 
   return {
     createAndRefresh,

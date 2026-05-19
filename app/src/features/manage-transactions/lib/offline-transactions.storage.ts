@@ -42,17 +42,49 @@ export const offlineTransactionsStorage = {
   async getPendingQueue(): Promise<TransactionQueueItem[]> {
     return (await indexedDbService.get<TransactionQueueItem[]>(storageKeys.pendingQueue)) ?? [];
   },
+  async getSyncDiagnostics() {
+    const [cachedTransactions, failedQueue, lastSuccessfulSyncAt, pendingQueue] = await Promise.all(
+      [
+        this.getCachedTransactions(),
+        this.getFailedQueue(),
+        this.getLastSuccessfulSyncAt(),
+        this.getPendingQueue(),
+      ],
+    );
+
+    return {
+      cachedTransactions: cachedTransactions.length,
+      failed: failedQueue.length,
+      lastError: failedQueue.at(-1)?.lastError ?? null,
+      lastSuccessfulSyncAt,
+      pending: pendingQueue.length,
+      totalQueued: pendingQueue.length + failedQueue.length,
+    };
+  },
   async markQueueItemFailed(item: TransactionQueueItem, error: unknown): Promise<void> {
     const failedQueue = await this.getFailedQueue();
+    const pendingQueue = await this.getPendingQueue();
     const failedItem: TransactionQueueItem = {
       ...item,
       attempts: item.attempts + 1,
       lastError: error instanceof Error ? error.message : 'Sync failed.',
     };
 
+    await indexedDbService.set(
+      storageKeys.pendingQueue,
+      pendingQueue.filter((queueItem) => queueItem.id !== item.id),
+    );
     await indexedDbService.set(storageKeys.failedQueue, [
       ...failedQueue.filter((queueItem) => queueItem.id !== item.id),
       failedItem,
+    ]);
+  },
+  async resetOfflineData(): Promise<void> {
+    await Promise.all([
+      indexedDbService.remove(storageKeys.failedQueue),
+      indexedDbService.remove(storageKeys.lastSuccessfulSyncAt),
+      indexedDbService.remove(storageKeys.pendingQueue),
+      indexedDbService.remove(storageKeys.transactionsCache),
     ]);
   },
   async removeQueueItem(itemId: string): Promise<void> {

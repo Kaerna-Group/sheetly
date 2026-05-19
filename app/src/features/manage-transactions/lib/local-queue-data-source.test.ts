@@ -79,6 +79,32 @@ describe('local queue data source', () => {
     ]);
   });
 
+  it('does not duplicate pending creates that already exist remotely', async () => {
+    const remoteDataSource = {
+      createTransaction: vi.fn(),
+      getCategories: vi.fn(),
+      getTransactions: vi.fn().mockResolvedValue([
+        {
+          ...transaction,
+          source: 'google-sheets',
+          syncStatus: 'synced',
+        },
+      ]),
+      softDeleteTransaction: vi.fn(),
+      syncPending: vi.fn(),
+      updateTransaction: vi.fn(),
+    };
+    const dataSource = createLocalQueueDataSource(remoteDataSource);
+
+    await dataSource.createTransaction(transaction);
+    await expect(dataSource.syncPending()).resolves.toEqual({
+      failed: 0,
+      synced: 1,
+      total: 1,
+    });
+    expect(remoteDataSource.createTransaction).not.toHaveBeenCalled();
+  });
+
   it('stores failed sync attempts for retry', async () => {
     const remoteDataSource = {
       createTransaction: vi.fn().mockRejectedValue(new Error('Network failed')),
@@ -91,6 +117,11 @@ describe('local queue data source', () => {
     const dataSource = createLocalQueueDataSource(remoteDataSource);
 
     await dataSource.createTransaction(transaction);
+    await expect(dataSource.syncPending()).resolves.toEqual({
+      failed: 1,
+      synced: 0,
+      total: 1,
+    });
     await expect(dataSource.syncPending()).resolves.toEqual({
       failed: 1,
       synced: 0,

@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 
 import { appConfig } from '@app/config/app-config';
 import { routePaths } from '@app/routes/route-paths';
+import { useOfflineSyncStatus } from '@features/manage-transactions';
+import { Badge } from '@shared/ui/badge';
 
 type AppLayoutProps = {
   actions?: ReactNode;
@@ -10,6 +12,15 @@ type AppLayoutProps = {
 };
 
 export function AppLayout({ actions, children }: AppLayoutProps) {
+  const { status } = useOfflineSyncStatus();
+  const syncBadge = status.isOnline
+    ? status.failed
+      ? { label: `${status.failed} failed`, variant: 'danger' as const }
+      : status.pending
+        ? { label: `${status.pending} pending`, variant: 'warning' as const }
+        : { label: 'Synced', variant: 'success' as const }
+    : { label: 'Offline', variant: 'warning' as const };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-zinc-200 bg-white">
@@ -21,6 +32,7 @@ export function AppLayout({ actions, children }: AppLayoutProps) {
             <p className="text-sm text-zinc-600">{appConfig.description}</p>
           </div>
           <nav className="flex items-center gap-2 text-sm">
+            <Badge variant={syncBadge.variant}>{syncBadge.label}</Badge>
             <NavLink
               className="rounded-md px-3 py-2 text-zinc-700 hover:bg-zinc-100"
               to={routePaths.home}
