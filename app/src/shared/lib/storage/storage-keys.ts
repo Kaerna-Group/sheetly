@@ -5,8 +5,18 @@ export type LocalStorageKey =
   | 'theme'
   | 'language'
   | 'lastSelectedCategory'
+  | 'lastSelectedExpenseCategoryId'
+  | 'lastSelectedExpenseCategoryName'
+  | 'lastSelectedIncomeCategoryId'
+  | 'lastSelectedIncomeCategoryName'
   | 'containersEnabled'
-  | 'lastSelectedContainerId';
+  | 'lastPaymentMethod'
+  | 'lastTransactionDate'
+  | 'lastSelectedContainerId'
+  | 'templateReadyAt'
+  | 'templateReadySpreadsheetId'
+  | 'templateReadyVersion'
+  | 'googleAuthEverConnected';
 
 export const localStorageKeys: LocalStorageKey[] = [
   'spreadsheetId',
@@ -15,6 +25,16 @@ export const localStorageKeys: LocalStorageKey[] = [
   'theme',
   'language',
   'lastSelectedCategory',
+  'lastSelectedExpenseCategoryId',
+  'lastSelectedExpenseCategoryName',
+  'lastSelectedIncomeCategoryId',
+  'lastSelectedIncomeCategoryName',
   'containersEnabled',
+  'lastPaymentMethod',
+  'lastTransactionDate',
   'lastSelectedContainerId',
+  'templateReadyAt',
+  'templateReadySpreadsheetId',
+  'templateReadyVersion',
+  'googleAuthEverConnected',
 ];

@@ -100,7 +100,6 @@ export async function readTransactions({
     return valueRange.values
       .map(mapRowToTransaction)
       .filter((transaction) => transaction !== null)
-      .filter((transaction) => !transaction.deletedAt)
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   } catch (error) {
     throw mapTransactionError(error);

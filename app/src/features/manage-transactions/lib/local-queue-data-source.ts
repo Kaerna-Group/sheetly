@@ -29,6 +29,14 @@ function asPendingTransaction(transaction: Transaction): Transaction {
   };
 }
 
+function asSyncingTransaction(transaction: Transaction): Transaction {
+  return {
+    ...transaction,
+    source: 'offline-queue',
+    syncStatus: 'syncing',
+  };
+}
+
 export function createLocalQueueDataSource(
   remoteDataSource?: FinanceDataSource,
 ): FinanceDataSource {
@@ -93,6 +101,12 @@ export function createLocalQueueDataSource(
 
       for (const item of syncQueue) {
         try {
+          if (item.transaction) {
+            await offlineTransactionsStorage.upsertCachedTransaction(
+              asSyncingTransaction(item.transaction),
+            );
+          }
+
           if (item.operation === 'create' && item.transaction) {
             const remoteTransactions =
               (await Promise.resolve(remoteDataSource.getTransactions()).catch(() => [])) ?? [];

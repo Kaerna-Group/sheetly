@@ -24,7 +24,11 @@ declare global {
   };
 
   type GoogleTokenClient = {
-    requestAccessToken: () => void;
+    requestAccessToken: (overrideConfig?: GoogleTokenRequestOptions) => void;
+  };
+
+  type GoogleTokenRequestOptions = {
+    prompt?: '' | 'consent' | 'select_account';
   };
 
   type GoogleTokenResponse = {

@@ -8,9 +8,9 @@ export function GoogleConnectButton() {
   return (
     <Button
       disabled={!googleAuth.isConfigured}
-      isLoading={googleAuth.status === 'loading'}
+      isLoading={googleAuth.status === 'loading' || googleAuth.status === 'restoring'}
       onClick={() => {
-        void googleAuth.requestAccessToken();
+        void googleAuth.requestAccessToken({ mode: 'interactive' });
       }}
       title={
         googleAuth.isConfigured
@@ -19,7 +19,11 @@ export function GoogleConnectButton() {
       }
       variant="secondary"
     >
-      {googleAuth.status === 'connected' ? 'Reconnect Google' : 'Connect Google'}
+      {googleAuth.status === 'restoring'
+        ? 'Restoring Google'
+        : googleAuth.status === 'connected'
+          ? 'Reconnect Google'
+          : 'Connect Google'}
     </Button>
   );
 }

@@ -41,6 +41,41 @@ const initialValues: TransactionFormValues = {
   containerName: '',
 };
 
+const amountPresets = ['50', '100', '250', '500', '1000'];
+
+function getLastCategoryValues(kind: 'income' | 'expense') {
+  const prefix = kind === 'income' ? 'Income' : 'Expense';
+
+  return {
+    id: localStorageService.get(`lastSelected${prefix}CategoryId`),
+    name: localStorageService.get(`lastSelected${prefix}CategoryName`),
+  };
+}
+
+function setLastCategoryValues(category: Category) {
+  const prefix = category.kind === 'income' ? 'Income' : 'Expense';
+
+  localStorageService.set(`lastSelected${prefix}CategoryId`, category.id);
+  localStorageService.set(`lastSelected${prefix}CategoryName`, category.name);
+}
+
+function getCreateInitialValues(initialContainer: Container | null): TransactionFormValues {
+  const kind = initialValues.kind;
+  const lastCategory = getLastCategoryValues(kind);
+
+  return {
+    ...initialValues,
+    categoryId: lastCategory.id ?? '',
+    categoryName: lastCategory.name ?? '',
+    containerId: initialContainer?.id ?? '',
+    containerName: initialContainer?.name ?? '',
+    currency:
+      initialContainer?.currency ?? localStorageService.get('currency') ?? initialValues.currency,
+    date: localStorageService.get('lastTransactionDate') ?? new Date().toISOString().slice(0, 10),
+    paymentMethod: localStorageService.get('lastPaymentMethod') ?? '',
+  };
+}
+
 function mapTransactionToFormValues(transaction: Transaction): TransactionFormValues {
   return {
     amount: String(transaction.amount),
@@ -70,12 +105,7 @@ export function CreateTransactionModal({
   const [values, setValues] = useState<TransactionFormValues>(() =>
     initialTransaction
       ? mapTransactionToFormValues(initialTransaction)
-      : {
-          ...initialValues,
-          containerId: initialContainer?.id ?? '',
-          containerName: initialContainer?.name ?? '',
-          currency: initialContainer?.currency ?? initialValues.currency,
-        },
+      : getCreateInitialValues(initialContainer),
   );
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(() =>
     initialTransaction
@@ -87,7 +117,16 @@ export function CreateTransactionModal({
           kind: initialTransaction.kind,
           name: initialTransaction.categoryName,
         }
-      : null,
+      : values.categoryId && values.categoryName
+        ? {
+            color: '#6366f1',
+            icon: 'tag',
+            id: values.categoryId,
+            isDefault: false,
+            kind: values.kind,
+            name: values.categoryName,
+          }
+        : null,
   );
   const [selectedContainer, setSelectedContainer] = useState<Container | null>(() =>
     initialTransaction?.containerId && initialTransaction.containerName
@@ -148,10 +187,16 @@ export function CreateTransactionModal({
         localStorageService.set('lastSelectedContainerId', selectedContainer.id);
       }
 
-      setValues({
-        ...initialValues,
-        date: new Date().toISOString().slice(0, 10),
-      });
+      if (selectedCategory) {
+        setLastCategoryValues(selectedCategory);
+      }
+
+      if (values.paymentMethod) {
+        localStorageService.set('lastPaymentMethod', values.paymentMethod);
+      }
+
+      localStorageService.set('lastTransactionDate', values.date);
+      setValues(getCreateInitialValues(selectedContainer));
       setSelectedCategory(null);
       onClose();
     }
@@ -224,6 +269,18 @@ export function CreateTransactionModal({
           placeholder="250"
           value={values.amount}
         />
+        <div className="-mt-2 flex flex-wrap gap-2">
+          {amountPresets.map((amount) => (
+            <button
+              className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition hover:border-brand hover:text-brand"
+              key={amount}
+              onClick={() => setValues({ ...values, amount })}
+              type="button"
+            >
+              {amount}
+            </button>
+          ))}
+        </div>
         <CategoryCombobox kind={values.kind} onChange={selectCategory} value={selectedCategory} />
         {containersEnabled ? (
           <ContainerCombobox

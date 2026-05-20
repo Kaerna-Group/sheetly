@@ -5,6 +5,10 @@ export type GoogleAuthState = {
   disconnect: () => void;
   error: string | null;
   isConfigured: boolean;
-  requestAccessToken: () => Promise<GoogleAccessToken | null>;
-  status: 'idle' | 'loading' | 'connected' | 'error';
+  requestAccessToken: (options?: GoogleAuthRequestOptions) => Promise<GoogleAccessToken | null>;
+  status: 'idle' | 'restoring' | 'loading' | 'connected' | 'error';
+};
+
+export type GoogleAuthRequestOptions = {
+  mode?: 'interactive' | 'silent';
 };

@@ -42,8 +42,9 @@ export function DashboardPage() {
     transactions,
     updateAndRefresh,
   } = useTransactions();
-  const summary = calculateTransactionSummary(transactions);
-  const currency = transactions[0]?.currency ?? defaultCurrency;
+  const activeTransactions = transactions.filter((transaction) => !transaction.deletedAt);
+  const summary = calculateTransactionSummary(activeTransactions);
+  const currency = activeTransactions[0]?.currency ?? defaultCurrency;
   const lastSelectedContainerId = localStorage.getItem('lastSelectedContainerId');
   const initialContainer =
     containers.find((container) => container.id === lastSelectedContainerId) ??
@@ -84,7 +85,7 @@ export function DashboardPage() {
           </p>
         </Card>
       </section>
-      <DashboardAnalytics transactions={transactions} />
+      <DashboardAnalytics transactions={activeTransactions} />
       <TransactionsHistory
         containersEnabled={containersEnabled}
         error={error}

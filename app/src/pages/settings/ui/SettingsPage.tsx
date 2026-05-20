@@ -3,7 +3,11 @@ import { type ChangeEvent, useRef, useState } from 'react';
 import { ConnectSpreadsheetModal } from '@features/connect-spreadsheet';
 import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
 import { ManageContainersModal } from '@features/manage-containers';
-import { offlineTransactionsStorage, useOfflineSyncStatus } from '@features/manage-transactions';
+import {
+  offlineTransactionsStorage,
+  useOfflineSyncStatus,
+  useTransactions,
+} from '@features/manage-transactions';
 import { SetupSpreadsheetButton } from '@features/setup-spreadsheet';
 import { AppLayout } from '@widgets/app-layout';
 import { Badge } from '@shared/ui/badge';
@@ -31,6 +35,7 @@ export function SettingsPage() {
   const spreadsheetId = localStorageService.get('spreadsheetId');
   const googleAuth = useGoogleAuth();
   const { refresh: refreshSyncStatus, status: syncStatus } = useOfflineSyncStatus();
+  const { isSyncing, retrySync } = useTransactions();
 
   function toggleContainers(enabled: boolean) {
     setContainersEnabled(enabled);
@@ -107,6 +112,17 @@ export function SettingsPage() {
     await refreshSyncStatus();
     setIsResetOpen(false);
     setSettingsMessage('Offline cache and sync queues were reset.');
+  }
+
+  async function retryQueuedChanges() {
+    await retrySync();
+    await refreshSyncStatus();
+  }
+
+  async function clearFailedQueue() {
+    await offlineTransactionsStorage.clearFailedQueue();
+    await refreshSyncStatus();
+    setSettingsMessage('Failed sync queue was cleared.');
   }
 
   return (
@@ -228,22 +244,13 @@ export function SettingsPage() {
         </div>
       </Card>
       <Card>
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Diagnostics</h2>
-            <div className="mt-3 grid gap-2 text-sm text-zinc-600">
-              <p>Spreadsheet: {spreadsheetId ?? 'not connected'}</p>
-              <p>Google: {googleAuth.status}</p>
-              <p>Network: {syncStatus.isOnline ? 'online' : 'offline'}</p>
-              <p>Cached transactions: {syncStatus.cachedTransactions}</p>
-              <p>
-                Queue: {syncStatus.pending} pending, {syncStatus.failed} failed
-              </p>
-              <p>Last sync: {syncStatus.lastSuccessfulSyncAt ?? 'never'}</p>
-              {syncStatus.lastError ? (
-                <p className="text-danger">Last sync error: {syncStatus.lastError}</p>
-              ) : null}
-            </div>
+            <h2 className="text-lg font-semibold text-zinc-950">Local data</h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              Export or import local Sheetly preferences, and reset only this browser cache when
+              diagnostics look stale.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={exportSettings} variant="secondary">
@@ -262,6 +269,83 @@ export function SettingsPage() {
               ref={fileInputRef}
               type="file"
             />
+          </div>
+        </div>
+      </Card>
+      <Card>
+        <div className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-950">Diagnostics</h2>
+            <div className="mt-3 grid gap-2 text-sm text-zinc-600">
+              <p>Spreadsheet: {spreadsheetId ?? 'not connected'}</p>
+              <p>Google: {googleAuth.status}</p>
+              <p>Network: {syncStatus.isOnline ? 'online' : 'offline'}</p>
+              <p>Cached transactions: {syncStatus.cachedTransactions}</p>
+              <p>
+                Queue: {syncStatus.pending} pending, {syncStatus.failed} failed
+              </p>
+              <p>Last sync: {syncStatus.lastSuccessfulSyncAt ?? 'never'}</p>
+              {syncStatus.lastError ? (
+                <p className="text-danger">Last sync error: {syncStatus.lastError}</p>
+              ) : null}
+            </div>
+            <div className="mt-5 rounded-md border border-zinc-200">
+              <div className="flex flex-col gap-3 border-b border-zinc-200 px-3 py-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-950">Queue inspector</h3>
+                  <p className="text-sm text-zinc-500">
+                    Pending and failed local changes waiting for Google Sheets sync.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={!syncStatus.totalQueued || isSyncing}
+                    isLoading={isSyncing}
+                    onClick={() => void retryQueuedChanges()}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    Retry all
+                  </Button>
+                  <Button onClick={() => void refreshSyncStatus()} size="sm" variant="ghost">
+                    Refresh queue
+                  </Button>
+                  <Button
+                    disabled={!syncStatus.failed}
+                    onClick={() => void clearFailedQueue()}
+                    size="sm"
+                    variant="danger"
+                  >
+                    Clear failed
+                  </Button>
+                </div>
+              </div>
+              <div className="divide-y divide-zinc-100">
+                {syncStatus.queueItems.length ? (
+                  syncStatus.queueItems.map((item) => (
+                    <div className="grid gap-1 px-3 py-3 text-sm text-zinc-600" key={item.id}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={item.lastError ? 'danger' : 'warning'}>
+                          {item.operation}
+                        </Badge>
+                        <span className="font-medium text-zinc-950">
+                          {item.transaction?.categoryName ?? item.transactionId}
+                        </span>
+                        {item.transaction?.comment ? <span>{item.transaction.comment}</span> : null}
+                      </div>
+                      <p>
+                        Attempts: {item.attempts} · Created: {item.createdAt}
+                      </p>
+                      {item.lastError ? (
+                        <p className="text-danger">Last error: {item.lastError}</p>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-4 text-sm text-zinc-500">Queue is empty.</div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </Card>

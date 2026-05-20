@@ -4,14 +4,52 @@ function normalizeCategoryId(categoryName: string) {
   return categoryName
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9а-яё]+/gi, '-')
+    .replace(/[^a-z0-9\u0400-\u04ff]+/gi, '-')
     .replace(/^-+|-+$/g, '');
 }
 
 function readNumber(value: string | undefined) {
-  const number = Number(value);
+  const compactValue = String(value ?? '')
+    .trim()
+    .replace('\u2212', '-')
+    .replace(/\s/g, '');
+
+  if (!compactValue) {
+    return null;
+  }
+
+  const lastCommaIndex = compactValue.lastIndexOf(',');
+  const lastDotIndex = compactValue.lastIndexOf('.');
+  let normalizedValue = compactValue;
+
+  if (lastCommaIndex !== -1 && lastDotIndex !== -1) {
+    normalizedValue =
+      lastCommaIndex > lastDotIndex
+        ? compactValue.replace(/\./g, '').replace(',', '.')
+        : compactValue.replace(/,/g, '');
+  } else if (lastCommaIndex !== -1) {
+    normalizedValue = /^-?\d{1,3}(,\d{3})+$/.test(compactValue)
+      ? compactValue.replace(/,/g, '')
+      : compactValue.replace(',', '.');
+  } else if (lastDotIndex !== -1 && /^-?\d{1,3}(\.\d{3})+$/.test(compactValue)) {
+    normalizedValue = compactValue.replace(/\./g, '');
+  }
+
+  const number = Number(normalizedValue);
 
   return Number.isFinite(number) ? number : null;
+}
+
+function readSource(value: string | undefined): Transaction['source'] {
+  return value === 'offline-queue' ? 'offline-queue' : 'google-sheets';
+}
+
+function readSyncStatus(value: string | undefined): Transaction['syncStatus'] {
+  if (['failed', 'local', 'pending', 'syncing', 'synced'].includes(value ?? '')) {
+    return value as Transaction['syncStatus'];
+  }
+
+  return 'synced';
 }
 
 export function mapTransactionToRow(transaction: Transaction): string[] {
@@ -55,7 +93,11 @@ export function mapRowToTransaction(row: string[]): Transaction | null {
     containerName,
   ] = row;
   const amount = readNumber(amountValue);
-  const signedAmount = readNumber(signedAmountValue);
+  const signedAmount =
+    readNumber(signedAmountValue) ??
+    (amount === null ? null : kind === 'expense' ? -Math.abs(amount) : Math.abs(amount));
+  const normalizedSource = readSource(source);
+  const normalizedSyncStatus = readSyncStatus(syncStatus);
 
   if (
     !id ||
@@ -65,9 +107,7 @@ export function mapRowToTransaction(row: string[]): Transaction | null {
     amount === null ||
     signedAmount === null ||
     !currency ||
-    !createdAt ||
-    source !== 'google-sheets' ||
-    syncStatus !== 'synced'
+    !createdAt
   ) {
     return null;
   }
@@ -86,8 +126,8 @@ export function mapRowToTransaction(row: string[]): Transaction | null {
     kind,
     paymentMethod: paymentMethod || undefined,
     signedAmount,
-    source,
-    syncStatus,
+    source: normalizedSource,
+    syncStatus: normalizedSyncStatus,
     updatedAt: updatedAt || undefined,
     deletedAt: deletedAt || undefined,
   };

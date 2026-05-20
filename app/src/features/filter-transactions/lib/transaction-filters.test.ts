@@ -113,6 +113,55 @@ describe('filterTransactions', () => {
       }).map((transaction) => transaction.id),
     ).toEqual(['transport']);
   });
+
+  it('filters by amount range', () => {
+    expect(
+      filterTransactions(transactions, {
+        ...createDefaultTransactionFilters(),
+        amountFrom: '200',
+        amountTo: '600',
+      }).map((transaction) => transaction.id),
+    ).toEqual(['salary']);
+  });
+
+  it('filters by sync status', () => {
+    expect(
+      filterTransactions(
+        [
+          ...transactions,
+          createTransaction({
+            id: 'pending',
+            syncStatus: 'pending',
+          }),
+        ],
+        {
+          ...createDefaultTransactionFilters(),
+          syncStatus: 'pending',
+        },
+      ).map((transaction) => transaction.id),
+    ).toEqual(['pending']);
+  });
+
+  it('hides deleted transactions by default and shows them when enabled', () => {
+    const deletedTransaction = createTransaction({
+      deletedAt: '2026-05-20T10:00:00.000Z',
+      id: 'deleted',
+    });
+
+    expect(
+      filterTransactions([...transactions, deletedTransaction], createDefaultTransactionFilters())
+        .map((transaction) => transaction.id)
+        .includes('deleted'),
+    ).toBe(false);
+    expect(
+      filterTransactions([...transactions, deletedTransaction], {
+        ...createDefaultTransactionFilters(),
+        showDeleted: true,
+      })
+        .map((transaction) => transaction.id)
+        .includes('deleted'),
+    ).toBe(true);
+  });
 });
 
 describe('getTransactionCategoryOptions', () => {

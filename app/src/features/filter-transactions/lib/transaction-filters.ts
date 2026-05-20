@@ -4,12 +4,16 @@ import type { TransactionFilters } from '../types/transaction-filters.type';
 
 export function createDefaultTransactionFilters(): TransactionFilters {
   return {
+    amountFrom: '',
+    amountTo: '',
     category: '',
     container: '',
     dateFrom: '',
     dateTo: '',
     kind: 'all',
     query: '',
+    showDeleted: false,
+    syncStatus: 'all',
   };
 }
 
@@ -41,16 +45,43 @@ function matchesQuery(transaction: Transaction, query: string) {
   );
 }
 
+function matchesAmountRange(transaction: Transaction, filters: TransactionFilters) {
+  const amountFrom = filters.amountFrom ? Number(filters.amountFrom) : null;
+  const amountTo = filters.amountTo ? Number(filters.amountTo) : null;
+
+  if (amountFrom !== null && Number.isFinite(amountFrom) && transaction.amount < amountFrom) {
+    return false;
+  }
+
+  if (amountTo !== null && Number.isFinite(amountTo) && transaction.amount > amountTo) {
+    return false;
+  }
+
+  return true;
+}
+
 export function filterTransactions(
   transactions: Transaction[],
   filters: TransactionFilters,
 ): Transaction[] {
   return transactions.filter((transaction) => {
+    if (!filters.showDeleted && transaction.deletedAt) {
+      return false;
+    }
+
     if (!matchesDateRange(transaction, filters)) {
       return false;
     }
 
+    if (!matchesAmountRange(transaction, filters)) {
+      return false;
+    }
+
     if (filters.kind !== 'all' && transaction.kind !== filters.kind) {
+      return false;
+    }
+
+    if (filters.syncStatus !== 'all' && transaction.syncStatus !== filters.syncStatus) {
       return false;
     }
 

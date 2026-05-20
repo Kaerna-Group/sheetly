@@ -14,21 +14,74 @@ function sortTransactions(transactions: Transaction[]) {
   return [...transactions].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
+function getItemTransaction(item: TransactionQueueItem, fallback?: Transaction) {
+  return item.transaction ?? fallback;
+}
+
+function mergeQueueItem(
+  existingItem: TransactionQueueItem | undefined,
+  nextItem: TransactionQueueItem,
+): TransactionQueueItem | null {
+  if (!existingItem) {
+    return nextItem;
+  }
+
+  if (existingItem.operation === 'create' && nextItem.operation === 'update') {
+    return {
+      ...existingItem,
+      attempts: 0,
+      lastError: undefined,
+      transaction: getItemTransaction(nextItem, existingItem.transaction),
+    };
+  }
+
+  if (existingItem.operation === 'create' && nextItem.operation === 'delete') {
+    return null;
+  }
+
+  if (nextItem.operation === 'delete') {
+    return {
+      ...nextItem,
+      attempts: 0,
+      lastError: undefined,
+    };
+  }
+
+  return {
+    ...nextItem,
+    attempts: 0,
+    createdAt: existingItem.createdAt,
+    lastError: undefined,
+  };
+}
+
 export const offlineTransactionsStorage = {
   async addQueueItem(item: TransactionQueueItem): Promise<void> {
+    await this.upsertQueueItem(item);
+  },
+  async upsertQueueItem(item: TransactionQueueItem): Promise<void> {
     const queue = await this.getPendingQueue();
-    const nextQueue = [
-      ...queue.filter((queueItem) => queueItem.transactionId !== item.transactionId),
-      item,
-    ];
+    const failedQueue = await this.getFailedQueue();
+    const existingItem = [...queue, ...failedQueue].find(
+      (queueItem) => queueItem.transactionId === item.transactionId,
+    );
+    const mergedItem = mergeQueueItem(existingItem, item);
+    const nextQueue = queue.filter((queueItem) => queueItem.transactionId !== item.transactionId);
+    const nextFailedQueue = failedQueue.filter(
+      (queueItem) => queueItem.transactionId !== item.transactionId,
+    );
 
-    await indexedDbService.set(storageKeys.pendingQueue, nextQueue);
+    await indexedDbService.set(
+      storageKeys.pendingQueue,
+      mergedItem ? [...nextQueue, mergedItem] : nextQueue,
+    );
+    await indexedDbService.set(storageKeys.failedQueue, nextFailedQueue);
   },
   async cacheTransactions(transactions: Transaction[]): Promise<void> {
-    await indexedDbService.set(
-      storageKeys.transactionsCache,
-      sortTransactions(transactions).filter((transaction) => !transaction.deletedAt),
-    );
+    await indexedDbService.set(storageKeys.transactionsCache, sortTransactions(transactions));
+  },
+  async clearFailedQueue(): Promise<void> {
+    await indexedDbService.remove(storageKeys.failedQueue);
   },
   async getCachedTransactions(): Promise<Transaction[]> {
     return (await indexedDbService.get<Transaction[]>(storageKeys.transactionsCache)) ?? [];
@@ -41,6 +94,16 @@ export const offlineTransactionsStorage = {
   },
   async getPendingQueue(): Promise<TransactionQueueItem[]> {
     return (await indexedDbService.get<TransactionQueueItem[]>(storageKeys.pendingQueue)) ?? [];
+  },
+  async getQueueItems(): Promise<TransactionQueueItem[]> {
+    const [pendingQueue, failedQueue] = await Promise.all([
+      this.getPendingQueue(),
+      this.getFailedQueue(),
+    ]);
+
+    return [...pendingQueue, ...failedQueue].sort((left, right) =>
+      right.createdAt.localeCompare(left.createdAt),
+    );
   },
   async getSyncDiagnostics() {
     const [cachedTransactions, failedQueue, lastSuccessfulSyncAt, pendingQueue] = await Promise.all(
@@ -78,6 +141,14 @@ export const offlineTransactionsStorage = {
       ...failedQueue.filter((queueItem) => queueItem.id !== item.id),
       failedItem,
     ]);
+
+    if (item.transaction) {
+      await this.upsertCachedTransaction({
+        ...item.transaction,
+        source: 'offline-queue',
+        syncStatus: 'failed',
+      });
+    }
   },
   async resetOfflineData(): Promise<void> {
     await Promise.all([

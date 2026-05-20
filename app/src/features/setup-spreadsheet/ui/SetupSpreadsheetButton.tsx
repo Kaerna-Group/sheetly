@@ -6,6 +6,7 @@ import { useSetupSpreadsheet } from '../model/useSetupSpreadsheet';
 export function SetupSpreadsheetButton() {
   const { error, runSetup, status } = useSetupSpreadsheet();
   const isBusy = status === 'checking' || status === 'setting-up';
+  const isReady = status === 'ready';
 
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -23,8 +24,13 @@ export function SetupSpreadsheetButton() {
         </p>
         {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
       </div>
-      <Button isLoading={isBusy} onClick={() => void runSetup()} variant="secondary">
-        Setup spreadsheet template
+      <Button
+        disabled={isReady}
+        isLoading={isBusy}
+        onClick={() => void runSetup()}
+        variant="secondary"
+      >
+        {isReady ? 'Template is ready' : 'Setup spreadsheet template'}
       </Button>
     </div>
   );

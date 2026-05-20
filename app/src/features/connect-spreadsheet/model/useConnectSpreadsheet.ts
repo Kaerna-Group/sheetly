@@ -40,6 +40,7 @@ export function useConnectSpreadsheet(onConnected?: () => void) {
     }
 
     onConnected?.();
+    window.dispatchEvent(new Event('sheetly:spreadsheet-connected'));
   }
 
   return {

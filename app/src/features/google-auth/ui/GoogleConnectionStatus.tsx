@@ -12,6 +12,7 @@ export function GoogleConnectionStatus({ status }: GoogleConnectionStatusProps) 
     error: 'Google error',
     idle: 'Google not connected',
     loading: 'Google connecting',
+    restoring: 'Google restoring',
   };
   const variantByStatus: Record<
     GoogleAuthState['status'],
@@ -21,6 +22,7 @@ export function GoogleConnectionStatus({ status }: GoogleConnectionStatusProps) 
     error: 'danger',
     idle: 'neutral',
     loading: 'info',
+    restoring: 'info',
   };
 
   return <Badge variant={variantByStatus[status]}>{labelByStatus[status]}</Badge>;

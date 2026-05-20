@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { offlineTransactionsStorage } from '../lib/offline-transactions.storage';
+import type { TransactionQueueItem } from '../types/sync-queue.type';
 
 export type OfflineSyncStatus = {
   cachedTransactions: number;
@@ -9,6 +10,7 @@ export type OfflineSyncStatus = {
   lastError: string | null;
   lastSuccessfulSyncAt: string | null;
   pending: number;
+  queueItems: TransactionQueueItem[];
   totalQueued: number;
 };
 
@@ -19,6 +21,7 @@ const defaultStatus: OfflineSyncStatus = {
   lastError: null,
   lastSuccessfulSyncAt: null,
   pending: 0,
+  queueItems: [],
   totalQueued: 0,
 };
 
@@ -26,11 +29,15 @@ export function useOfflineSyncStatus() {
   const [status, setStatus] = useState<OfflineSyncStatus>(defaultStatus);
 
   const refresh = useCallback(async () => {
-    const diagnostics = await offlineTransactionsStorage.getSyncDiagnostics();
+    const [diagnostics, queueItems] = await Promise.all([
+      offlineTransactionsStorage.getSyncDiagnostics(),
+      offlineTransactionsStorage.getQueueItems(),
+    ]);
 
     setStatus({
       ...diagnostics,
       isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
+      queueItems,
     });
   }, []);
 
@@ -38,12 +45,16 @@ export function useOfflineSyncStatus() {
     let isActive = true;
 
     async function refreshIfActive() {
-      const diagnostics = await offlineTransactionsStorage.getSyncDiagnostics();
+      const [diagnostics, queueItems] = await Promise.all([
+        offlineTransactionsStorage.getSyncDiagnostics(),
+        offlineTransactionsStorage.getQueueItems(),
+      ]);
 
       if (isActive) {
         setStatus({
           ...diagnostics,
           isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
+          queueItems,
         });
       }
     }

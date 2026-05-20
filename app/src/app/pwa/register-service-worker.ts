@@ -1,5 +1,23 @@
 export function registerServiceWorker() {
-  if (!('serviceWorker' in navigator) || import.meta.env.DEV) {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  if (import.meta.env.DEV) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) =>
+          Promise.all(
+            registrations
+              .filter((registration) => registration.scope.includes('/sheetly/'))
+              .map((registration) => registration.unregister()),
+          ),
+        )
+        .catch(() => {
+          // Development cleanup is best-effort.
+        });
+    });
     return;
   }
 
