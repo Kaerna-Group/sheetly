@@ -50,14 +50,18 @@ describe('calculateCategoryStats', () => {
     ).toEqual([
       {
         categoryName: 'Food',
+        count: 2,
         expense: 350,
         income: 0,
+        kind: 'expense',
         total: 350,
       },
       {
         categoryName: 'Salary',
+        count: 1,
         expense: 0,
         income: 1000,
+        kind: 'income',
         total: 1000,
       },
     ]);

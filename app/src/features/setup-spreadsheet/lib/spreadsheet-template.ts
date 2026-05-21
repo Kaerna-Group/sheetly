@@ -20,6 +20,12 @@ import {
 import { mapCategoryToRow } from '@features/manage-categories';
 import { mapContainerToRow } from '@features/manage-containers';
 
+const monthlyStatsFormula =
+  '=IFERROR(QUERY(FILTER({TEXT(Ledger!B2:B,"yyyy-mm"),IF(Ledger!C2:C="income",Ledger!E2:E,0),IF(Ledger!C2:C="expense",Ledger!E2:E,0),Ledger!F2:F},Ledger!A2:A<>"",Ledger!N2:N=""),"select Col1, sum(Col2), sum(Col3), sum(Col4) group by Col1 label Col1 \'\', sum(Col2) \'\', sum(Col3) \'\', sum(Col4) \'\'",0),)';
+
+const categoryStatsFormula =
+  "=IFERROR(QUERY(FILTER({Ledger!D2:D,Ledger!C2:C,Ledger!E2:E},Ledger!A2:A<>\"\",Ledger!N2:N=\"\"),\"select Col1, Col2, sum(Col3), count(Col3) group by Col1, Col2 label Col1 '', Col2 '', sum(Col3) '', count(Col3) ''\",0),)";
+
 export function getExistingSheetNames(metadata: SpreadsheetMetadata) {
   return new Set(
     metadata.sheets
@@ -67,8 +73,16 @@ export function buildTemplateValueRanges(includeDefaultCategories: boolean): Val
       values: [[...monthlyStatsHeaders]],
     },
     {
+      range: sheetRanges.monthlyStatsFormula,
+      values: [[monthlyStatsFormula]],
+    },
+    {
       range: sheetRanges.categoryStatsHeaders,
       values: [[...categoryStatsHeaders]],
+    },
+    {
+      range: sheetRanges.categoryStatsFormula,
+      values: [[categoryStatsFormula]],
     },
     {
       range: sheetRanges.summary,

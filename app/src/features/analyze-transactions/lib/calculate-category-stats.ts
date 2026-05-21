@@ -6,12 +6,15 @@ export function calculateCategoryStats(transactions: Transaction[]): CategorySta
   const statsByCategory = new Map<string, CategoryStats>();
 
   transactions.forEach((transaction) => {
+    const statsKey = `${transaction.kind}:${transaction.categoryName}`;
     const currentStats =
-      statsByCategory.get(transaction.categoryName) ??
+      statsByCategory.get(statsKey) ??
       ({
         categoryName: transaction.categoryName,
+        count: 0,
         expense: 0,
         income: 0,
+        kind: transaction.kind,
         total: 0,
       } satisfies CategoryStats);
 
@@ -21,18 +24,21 @@ export function calculateCategoryStats(transactions: Transaction[]): CategorySta
       currentStats.expense += transaction.amount;
     }
 
+    currentStats.count += 1;
     currentStats.total += Math.abs(transaction.amount);
-    statsByCategory.set(transaction.categoryName, currentStats);
+    statsByCategory.set(statsKey, currentStats);
   });
 
   return [...statsByCategory.values()].sort((left, right) =>
-    left.categoryName.localeCompare(right.categoryName),
+    left.categoryName === right.categoryName
+      ? left.kind.localeCompare(right.kind)
+      : left.categoryName.localeCompare(right.categoryName),
   );
 }
 
 export function calculateTopCategories(transactions: Transaction[], limit = 5): TopCategoryStats[] {
   return calculateCategoryStats(transactions)
-    .filter((categoryStats) => categoryStats.expense > 0)
+    .filter((categoryStats) => categoryStats.kind === 'expense' && categoryStats.expense > 0)
     .map((categoryStats) => ({
       categoryName: categoryStats.categoryName,
       total: categoryStats.expense,

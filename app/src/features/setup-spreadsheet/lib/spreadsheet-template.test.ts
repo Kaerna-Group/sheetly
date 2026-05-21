@@ -64,8 +64,16 @@ describe('spreadsheet template helpers', () => {
           values: [['month', 'income', 'expense', 'balance']],
         }),
         expect.objectContaining({
+          range: 'MonthlyStats!A2',
+          values: [[expect.stringContaining('QUERY(FILTER')]],
+        }),
+        expect.objectContaining({
           range: 'CategoryStats!A1:D1',
           values: [['category', 'kind', 'total', 'count']],
+        }),
+        expect.objectContaining({
+          range: 'CategoryStats!A2',
+          values: [[expect.stringContaining('group by Col1, Col2')]],
         }),
       ]),
     );
