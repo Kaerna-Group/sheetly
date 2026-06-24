@@ -19,7 +19,15 @@ describe('spreadsheet template helpers', () => {
           },
         ],
       }),
-    ).toEqual(['Categories', 'Containers', 'Summary', 'MonthlyStats', 'CategoryStats', 'Settings']);
+    ).toEqual([
+      'Categories',
+      'Containers',
+      'Currencies',
+      'Summary',
+      'MonthlyStats',
+      'CategoryStats',
+      'Settings',
+    ]);
   });
 
   it('builds addSheet requests', () => {
@@ -34,8 +42,11 @@ describe('spreadsheet template helpers', () => {
     ]);
   });
 
-  it('builds template value ranges with default categories', () => {
-    const ranges = buildTemplateValueRanges(true);
+  it('builds template value ranges with default categories and currencies', () => {
+    const ranges = buildTemplateValueRanges({
+      includeDefaultCategories: true,
+      includeDefaultCurrencies: true,
+    });
 
     expect(ranges).toEqual(
       expect.arrayContaining([
@@ -49,8 +60,19 @@ describe('spreadsheet template helpers', () => {
           range: 'Containers!A2:G',
         }),
         expect.objectContaining({
+          range: 'Currencies!A1:G1',
+          values: [['id', 'code', 'name', 'symbol', 'decimalDigits', 'isDefault', 'isEnabled']],
+        }),
+        expect.objectContaining({
+          range: 'Currencies!A2:G',
+          values: expect.arrayContaining([
+            ['uah', 'UAH', 'Ukrainian Hryvnia', '₴', '2', 'TRUE', 'TRUE'],
+            ['jpy', 'JPY', 'Japanese Yen', '¥', '0', 'TRUE', 'TRUE'],
+          ]),
+        }),
+        expect.objectContaining({
           range: 'Settings!A2:B2',
-          values: [['templateVersion', '2']],
+          values: [['templateVersion', '4']],
         }),
         expect.objectContaining({
           range: 'Summary!A:B',
@@ -60,28 +82,51 @@ describe('spreadsheet template helpers', () => {
           ]),
         }),
         expect.objectContaining({
-          range: 'MonthlyStats!A1:D1',
-          values: [['month', 'income', 'expense', 'balance']],
+          range: 'Summary!A8',
+          values: [[expect.stringContaining('QUERY(FILTER')]],
+        }),
+        expect.objectContaining({
+          range: 'MonthlyStats!A1:E1',
+          values: [['month', 'currency', 'income', 'expense', 'balance']],
         }),
         expect.objectContaining({
           range: 'MonthlyStats!A2',
           values: [[expect.stringContaining('QUERY(FILTER')]],
         }),
         expect.objectContaining({
-          range: 'CategoryStats!A1:D1',
-          values: [['category', 'kind', 'total', 'count']],
+          range: 'CategoryStats!A1:E1',
+          values: [['category', 'kind', 'currency', 'total', 'count']],
         }),
         expect.objectContaining({
           range: 'CategoryStats!A2',
-          values: [[expect.stringContaining('group by Col1, Col2')]],
+          values: [[expect.stringContaining('group by Col1, Col2, Col3')]],
         }),
       ]),
     );
   });
 
-  it('skips default categories when requested', () => {
-    expect(buildTemplateValueRanges(false).some((range) => range.range === 'Categories!A2:F')).toBe(
-      false,
+  it('always writes currency headers even when seed rows are skipped', () => {
+    const ranges = buildTemplateValueRanges({
+      includeDefaultCategories: false,
+      includeDefaultCurrencies: false,
+    });
+
+    expect(ranges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          range: 'Currencies!A1:G1',
+        }),
+      ]),
     );
+  });
+
+  it('skips default categories and currencies when requested', () => {
+    const ranges = buildTemplateValueRanges({
+      includeDefaultCategories: false,
+      includeDefaultCurrencies: false,
+    });
+
+    expect(ranges.some((range) => range.range === 'Categories!A2:F')).toBe(false);
+    expect(ranges.some((range) => range.range === 'Currencies!A2:G')).toBe(false);
   });
 });

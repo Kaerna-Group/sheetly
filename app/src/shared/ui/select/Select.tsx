@@ -1,44 +1,159 @@
-import type { SelectHTMLAttributes } from 'react';
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { cn } from '@shared/lib/classnames/cn';
 
-type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
-  error?: string;
-  hint?: string;
-  label?: string;
+export type SelectOption = {
+  label: string;
+  value: string;
 };
 
-export function Select({ children, className, error, hint, id, label, ...props }: SelectProps) {
+type SelectProps = {
+  disabled?: boolean;
+  error?: string;
+  hint?: string;
+  id?: string;
+  label?: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  value: string;
+};
+
+export function Select({
+  disabled,
+  error,
+  hint,
+  id,
+  label,
+  onChange,
+  options,
+  value,
+}: SelectProps) {
   const generatedId = useId();
   const selectId = id ?? generatedId;
-  const descriptionId = `${selectId}-description`;
   const description = error ?? hint;
 
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(e: PointerEvent) {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setIsOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
   return (
-    <label className="grid gap-2 text-sm font-medium text-zinc-700" htmlFor={selectId}>
-      {label ? <span>{label}</span> : null}
-      <select
-        aria-describedby={description ? descriptionId : undefined}
+    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={containerRef}>
+      {label ? <span id={`${selectId}-label`}>{label}</span> : null}
+
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         aria-invalid={Boolean(error)}
+        aria-labelledby={label ? `${selectId}-label` : undefined}
         className={cn(
-          'h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-brand focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-900 outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100',
+          disabled && 'cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200',
           error && 'border-danger focus:border-danger focus:ring-red-100',
-          className,
         )}
-        id={selectId}
-        {...props}
+        disabled={disabled}
+        onClick={() => setIsOpen((o) => !o)}
+        type="button"
       >
-        {children}
-      </select>
+        <span className="truncate">{selectedOption?.label ?? 'Select...'}</span>
+        <ChevronDownIcon
+          className={cn(
+            'size-4 shrink-0 text-zinc-400 transition-transform duration-150',
+            isOpen && 'rotate-180',
+          )}
+        />
+      </button>
+
       {description ? (
-        <span
-          className={cn('text-xs font-normal text-zinc-500', error && 'text-danger')}
-          id={descriptionId}
-        >
+        <span className={cn('text-xs font-normal text-zinc-500', error && 'text-danger')}>
           {description}
         </span>
       ) : null}
-    </label>
+
+      {isOpen && !disabled ? (
+        <div
+          className="absolute top-full z-50 mt-1.5 max-h-64 w-full min-w-max overflow-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl"
+          role="listbox"
+        >
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                aria-selected={isSelected}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
+                  isSelected
+                    ? 'bg-indigo-50 font-medium text-brand'
+                    : 'text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900',
+                )}
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                <CheckIcon
+                  className={cn('size-3.5 shrink-0', isSelected ? 'text-brand' : 'invisible')}
+                />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+    >
+      <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      viewBox="0 0 24 24"
+    >
+      <path d="m4.5 12.75 6 6 9-13.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

@@ -51,6 +51,7 @@ describe('calculateCategoryStats', () => {
       {
         categoryName: 'Food',
         count: 2,
+        currency: 'UAH',
         expense: 350,
         income: 0,
         kind: 'expense',
@@ -59,11 +60,64 @@ describe('calculateCategoryStats', () => {
       {
         categoryName: 'Salary',
         count: 1,
+        currency: 'UAH',
         expense: 0,
         income: 1000,
         kind: 'income',
         total: 1000,
       },
+    ]);
+  });
+
+  it('groups by category and currency separately — never mixes currencies', () => {
+    const result = calculateCategoryStats([
+      createTransaction({
+        amount: 100,
+        categoryName: 'Food',
+        currency: 'UAH',
+        id: 'food-uah',
+        kind: 'expense',
+        signedAmount: -100,
+      }),
+      createTransaction({
+        amount: 50,
+        categoryName: 'Food',
+        currency: 'USD',
+        id: 'food-usd',
+        kind: 'expense',
+        signedAmount: -50,
+      }),
+    ]);
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ categoryName: 'Food', currency: 'UAH', expense: 100 }),
+        expect.objectContaining({ categoryName: 'Food', currency: 'USD', expense: 50 }),
+      ]),
+    );
+  });
+
+  it('sums same-currency transactions in the same category', () => {
+    expect(
+      calculateCategoryStats([
+        createTransaction({
+          amount: 100,
+          categoryName: 'Food',
+          id: 'food-1',
+          kind: 'expense',
+          signedAmount: -100,
+        }),
+        createTransaction({
+          amount: 50,
+          categoryName: 'Food',
+          id: 'food-2',
+          kind: 'expense',
+          signedAmount: -50,
+        }),
+      ]),
+    ).toEqual([
+      expect.objectContaining({ categoryName: 'Food', currency: 'UAH', expense: 150, count: 2 }),
     ]);
   });
 });

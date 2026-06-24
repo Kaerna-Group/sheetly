@@ -3,7 +3,7 @@ import type { Transaction } from '@entities/transaction';
 import { getDefaultCategories } from '@entities/category';
 import type { FinanceDataSource, SyncQueueOperation, SyncResult } from '@shared/lib/data-source';
 
-import { offlineTransactionsStorage } from './offline-transactions.storage';
+import { createOfflineTransactionsStorage } from './offline-transactions.storage';
 import type { TransactionQueueItem } from '../types/sync-queue.type';
 
 function createQueueItem(
@@ -39,15 +39,16 @@ function asSyncingTransaction(transaction: Transaction): Transaction {
 
 export function createLocalQueueDataSource(
   remoteDataSource?: FinanceDataSource,
+  spreadsheetId = '__unscoped__',
 ): FinanceDataSource {
+  const storage = createOfflineTransactionsStorage(spreadsheetId);
+
   return {
     async createTransaction(transaction: Transaction): Promise<Transaction> {
       const pendingTransaction = asPendingTransaction(transaction);
 
-      await offlineTransactionsStorage.upsertCachedTransaction(pendingTransaction);
-      await offlineTransactionsStorage.addQueueItem(
-        createQueueItem('create', transaction.id, pendingTransaction),
-      );
+      await storage.upsertCachedTransaction(pendingTransaction);
+      await storage.addQueueItem(createQueueItem('create', transaction.id, pendingTransaction));
 
       return pendingTransaction;
     },
@@ -55,11 +56,11 @@ export function createLocalQueueDataSource(
       return Promise.resolve(getDefaultCategories());
     },
     getTransactions() {
-      return offlineTransactionsStorage.getCachedTransactions();
+      return storage.getCachedTransactions();
     },
     async softDeleteTransaction(transactionId: string): Promise<void> {
-      const cachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
-      const pendingQueue = await offlineTransactionsStorage.getPendingQueue();
+      const cachedTransactions = await storage.getCachedTransactions();
+      const pendingQueue = await storage.getPendingQueue();
       const now = new Date().toISOString();
       const transaction = cachedTransactions.find(
         (cachedTransaction) => cachedTransaction.id === transactionId,
@@ -69,7 +70,7 @@ export function createLocalQueueDataSource(
       );
 
       if (transaction) {
-        await offlineTransactionsStorage.upsertCachedTransaction({
+        await storage.upsertCachedTransaction({
           ...transaction,
           deletedAt: now,
           syncStatus: 'pending',
@@ -78,15 +79,15 @@ export function createLocalQueueDataSource(
       }
 
       if (pendingCreate) {
-        await offlineTransactionsStorage.removeQueueItem(pendingCreate.id);
+        await storage.removeQueueItem(pendingCreate.id);
         return;
       }
 
-      await offlineTransactionsStorage.addQueueItem(createQueueItem('delete', transactionId));
+      await storage.addQueueItem(createQueueItem('delete', transactionId));
     },
     async syncPending(): Promise<SyncResult> {
-      const queue = await offlineTransactionsStorage.getPendingQueue();
-      const failedQueue = await offlineTransactionsStorage.getFailedQueue();
+      const queue = await storage.getPendingQueue();
+      const failedQueue = await storage.getFailedQueue();
       const syncQueue = [...queue, ...failedQueue];
       let synced = 0;
       let failed = 0;
@@ -102,9 +103,7 @@ export function createLocalQueueDataSource(
       for (const item of syncQueue) {
         try {
           if (item.transaction) {
-            await offlineTransactionsStorage.upsertCachedTransaction(
-              asSyncingTransaction(item.transaction),
-            );
+            await storage.upsertCachedTransaction(asSyncingTransaction(item.transaction));
           }
 
           if (item.operation === 'create' && item.transaction) {
@@ -121,7 +120,7 @@ export function createLocalQueueDataSource(
                 syncStatus: 'synced',
               }));
 
-            await offlineTransactionsStorage.upsertCachedTransaction(syncedTransaction);
+            await storage.upsertCachedTransaction(syncedTransaction);
           }
 
           if (item.operation === 'update' && item.transaction) {
@@ -131,23 +130,23 @@ export function createLocalQueueDataSource(
               syncStatus: 'synced',
             });
 
-            await offlineTransactionsStorage.upsertCachedTransaction(syncedTransaction);
+            await storage.upsertCachedTransaction(syncedTransaction);
           }
 
           if (item.operation === 'delete') {
             await remoteDataSource.softDeleteTransaction(item.transactionId);
           }
 
-          await offlineTransactionsStorage.removeQueueItem(item.id);
+          await storage.removeQueueItem(item.id);
           synced += 1;
         } catch (error) {
-          await offlineTransactionsStorage.markQueueItemFailed(item, error);
+          await storage.markQueueItemFailed(item, error);
           failed += 1;
         }
       }
 
       if (synced > 0) {
-        await offlineTransactionsStorage.setLastSuccessfulSyncAt(new Date().toISOString());
+        await storage.setLastSuccessfulSyncAt(new Date().toISOString());
       }
 
       return {
@@ -157,7 +156,7 @@ export function createLocalQueueDataSource(
       };
     },
     async updateTransaction(transaction: Transaction): Promise<Transaction> {
-      const pendingQueue = await offlineTransactionsStorage.getPendingQueue();
+      const pendingQueue = await storage.getPendingQueue();
       const pendingCreate = pendingQueue.find(
         (item) => item.transactionId === transaction.id && item.operation === 'create',
       );
@@ -166,8 +165,8 @@ export function createLocalQueueDataSource(
         updatedAt: new Date().toISOString(),
       };
 
-      await offlineTransactionsStorage.upsertCachedTransaction(pendingTransaction);
-      await offlineTransactionsStorage.addQueueItem(
+      await storage.upsertCachedTransaction(pendingTransaction);
+      await storage.addQueueItem(
         createQueueItem(pendingCreate ? 'create' : 'update', transaction.id, pendingTransaction),
       );
 

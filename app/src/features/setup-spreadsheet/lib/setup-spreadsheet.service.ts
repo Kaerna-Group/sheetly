@@ -23,19 +23,18 @@ export type SetupSpreadsheetResult = {
   status: 'ready';
 };
 
-async function hasExistingCategories({
-  accessToken,
-  googleSheetsClient,
-  spreadsheetId,
-}: Required<SetupSpreadsheetParams>) {
+async function hasExistingRows(
+  { accessToken, googleSheetsClient, spreadsheetId }: Required<SetupSpreadsheetParams>,
+  range: string,
+) {
   try {
-    const categories = await googleSheetsClient.readRange({
+    const existing = await googleSheetsClient.readRange({
       accessToken,
-      range: sheetRanges.categoriesData,
+      range,
       spreadsheetId,
     });
 
-    return categories.values.length > 0;
+    return existing.values.length > 0;
   } catch {
     return false;
   }
@@ -67,15 +66,17 @@ export async function setupSpreadsheet({
       })
     : metadata;
 
-  const includeDefaultCategories = !(await hasExistingCategories({
-    accessToken,
-    googleSheetsClient,
-    spreadsheetId,
-  }));
+  const [hasCategories, hasCurrencies] = await Promise.all([
+    hasExistingRows({ accessToken, googleSheetsClient, spreadsheetId }, sheetRanges.categoriesData),
+    hasExistingRows({ accessToken, googleSheetsClient, spreadsheetId }, sheetRanges.currenciesData),
+  ]);
 
   await googleSheetsClient.batchUpdateValues({
     accessToken,
-    data: buildTemplateValueRanges(includeDefaultCategories),
+    data: buildTemplateValueRanges({
+      includeDefaultCategories: !hasCategories,
+      includeDefaultCurrencies: !hasCurrencies,
+    }),
     spreadsheetId,
   });
 

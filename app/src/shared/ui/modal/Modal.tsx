@@ -38,7 +38,7 @@ export function Modal({ children, description, footer, isOpen, onClose, title }:
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-zinc-950/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-end bg-zinc-950/40 p-0 sm:place-items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -49,10 +49,10 @@ export function Modal({ children, description, footer, isOpen, onClose, title }:
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="w-full max-w-lg rounded-lg bg-white shadow-xl"
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-white shadow-xl sm:max-w-lg sm:rounded-lg"
         role="dialog"
       >
-        <header className="flex items-start justify-between gap-3 border-b border-zinc-200 p-5">
+        <header className="flex items-start justify-between gap-3 border-b border-zinc-200 p-4 sm:p-5">
           <div>
             <h2 className="text-lg font-semibold text-zinc-950" id={titleId}>
               {title}
@@ -67,8 +67,8 @@ export function Modal({ children, description, footer, isOpen, onClose, title }:
             X
           </Button>
         </header>
-        <div className="p-5">{children}</div>
-        {footer ? <footer className="border-t border-zinc-200 p-5">{footer}</footer> : null}
+        <div className="p-4 sm:p-5">{children}</div>
+        {footer ? <footer className="border-t border-zinc-200 p-4 sm:p-5">{footer}</footer> : null}
       </section>
     </div>
   );

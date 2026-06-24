@@ -4,7 +4,7 @@ import { ConnectSpreadsheetModal } from '@features/connect-spreadsheet';
 import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
 import { ManageContainersModal } from '@features/manage-containers';
 import {
-  offlineTransactionsStorage,
+  createOfflineTransactionsStorage,
   useOfflineSyncStatus,
   useTransactions,
 } from '@features/manage-transactions';
@@ -34,7 +34,7 @@ export function SettingsPage() {
   const [theme, setTheme] = useState(localStorageService.get('theme') ?? 'system');
   const spreadsheetId = localStorageService.get('spreadsheetId');
   const googleAuth = useGoogleAuth();
-  const { refresh: refreshSyncStatus, status: syncStatus } = useOfflineSyncStatus();
+  const { refresh: refreshSyncStatus, status: syncStatus } = useOfflineSyncStatus(spreadsheetId);
   const { isSyncing, retrySync } = useTransactions();
 
   function toggleContainers(enabled: boolean) {
@@ -108,7 +108,7 @@ export function SettingsPage() {
   }
 
   async function resetOfflineCache() {
-    await offlineTransactionsStorage.resetOfflineData();
+    await createOfflineTransactionsStorage(spreadsheetId ?? '__unscoped__').resetOfflineData();
     await refreshSyncStatus();
     setIsResetOpen(false);
     setSettingsMessage('Offline cache and sync queues were reset.');
@@ -120,7 +120,7 @@ export function SettingsPage() {
   }
 
   async function clearFailedQueue() {
-    await offlineTransactionsStorage.clearFailedQueue();
+    await createOfflineTransactionsStorage(spreadsheetId ?? '__unscoped__').clearFailedQueue();
     await refreshSyncStatus();
     setSettingsMessage('Failed sync queue was cleared.');
   }
@@ -223,24 +223,26 @@ export function SettingsPage() {
             hint="Stored locally for upcoming localization polish."
             id="language"
             label="Language"
-            onChange={(event) => updatePreference('language', event.target.value)}
+            onChange={(value) => updatePreference('language', value)}
+            options={[
+              { label: 'English', value: 'en' },
+              { label: 'Russian', value: 'ru' },
+              { label: 'Ukrainian', value: 'uk' },
+            ]}
             value={language}
-          >
-            <option value="en">English</option>
-            <option value="ru">Russian</option>
-            <option value="uk">Ukrainian</option>
-          </Select>
+          />
           <Select
             hint="Theme wiring is prepared for the next UI polish pass."
             id="theme"
             label="Theme"
-            onChange={(event) => updatePreference('theme', event.target.value)}
+            onChange={(value) => updatePreference('theme', value)}
+            options={[
+              { label: 'System', value: 'system' },
+              { label: 'Light', value: 'light' },
+              { label: 'Dark', value: 'dark' },
+            ]}
             value={theme}
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </Select>
+          />
         </div>
       </Card>
       <Card>

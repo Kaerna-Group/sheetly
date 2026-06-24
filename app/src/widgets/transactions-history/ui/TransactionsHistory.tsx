@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { Transaction } from '@entities/transaction';
 import {
@@ -6,13 +6,16 @@ import {
   filterTransactions,
   getTransactionContainerOptions,
   getTransactionCategoryOptions,
+  getTransactionCurrencyOptions,
   type TransactionFilters,
 } from '@features/filter-transactions';
 import { Badge, type BadgeVariant } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
+import { DatePicker } from '@shared/ui/date-picker';
 import { EmptyState } from '@shared/ui/empty-state';
 import { Input } from '@shared/ui/input';
+import { Select } from '@shared/ui/select';
 import { Skeleton } from '@shared/ui/skeleton';
 
 type TransactionsHistoryProps = {
@@ -54,24 +57,6 @@ function formatSyncStatus(status: Transaction['syncStatus']) {
   return status[0].toUpperCase() + status.slice(1);
 }
 
-function formatDateLabel(value: string) {
-  if (!value) {
-    return 'dd.mm.yyyy';
-  }
-
-  const [year, month, day] = value.split('-');
-
-  return `${day}.${month}.${year}`;
-}
-
-function toDateValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
 function useOutsideClose(isOpen: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -100,6 +85,7 @@ function hasActiveFilters(filters: TransactionFilters) {
     filters.amountTo ||
     filters.category ||
     filters.container ||
+    filters.currency ||
     filters.dateFrom ||
     filters.dateTo ||
     filters.kind !== 'all' ||
@@ -132,191 +118,6 @@ function TransactionsHistorySkeleton() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-type FilterOption = {
-  label: string;
-  value: string;
-};
-
-type FilterSelectProps = {
-  id: string;
-  label: string;
-  onChange: (value: string) => void;
-  options: FilterOption[];
-  value: string;
-};
-
-function FilterSelect({ id, label, onChange, options, value }: FilterSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find((option) => option.value === value) ?? options[0];
-  const wrapperRef = useOutsideClose(isOpen, () => setIsOpen(false));
-
-  return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={wrapperRef}>
-      <span id={`${id}-label`}>{label}</span>
-      <button
-        aria-expanded={isOpen}
-        aria-labelledby={`${id}-label`}
-        className="flex h-10 items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-900 shadow-sm outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100"
-        onClick={() => setIsOpen((current) => !current)}
-        type="button"
-      >
-        <span className="truncate">{selectedOption.label}</span>
-        <span className="text-xs text-zinc-400">⌄</span>
-      </button>
-      {isOpen ? (
-        <div className="absolute top-full z-20 mt-2 max-h-64 w-full min-w-44 overflow-auto rounded-md border border-zinc-200 bg-white p-1 shadow-lg">
-          {options.map((option) => (
-            <button
-              className={
-                option.value === value
-                  ? 'flex w-full rounded px-3 py-2 text-left text-sm font-medium text-brand'
-                  : 'flex w-full rounded px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50'
-              }
-              key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              type="button"
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-type DateFilterFieldProps = {
-  id: string;
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-};
-
-function DateFilterField({ id, label, onChange, value }: DateFilterFieldProps) {
-  const selectedDate = value ? new Date(`${value}T00:00:00`) : new Date();
-  const [isOpen, setIsOpen] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(
-    new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-  );
-  const wrapperRef = useOutsideClose(isOpen, () => setIsOpen(false));
-  const monthLabel = visibleMonth.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-  const firstWeekday = (visibleMonth.getDay() + 6) % 7;
-  const daysInMonth = new Date(
-    visibleMonth.getFullYear(),
-    visibleMonth.getMonth() + 1,
-    0,
-  ).getDate();
-  const calendarDays = [
-    ...Array.from({ length: firstWeekday }, () => null),
-    ...Array.from(
-      { length: daysInMonth },
-      (_, index) => new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), index + 1),
-    ),
-  ];
-
-  function moveMonth(direction: -1 | 1) {
-    setVisibleMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() + direction, 1),
-    );
-  }
-
-  return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={wrapperRef}>
-      <span id={`${id}-label`}>{label}</span>
-      <button
-        aria-expanded={isOpen}
-        aria-labelledby={`${id}-label`}
-        className="flex h-10 items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-900 shadow-sm outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100"
-        onClick={() => setIsOpen((current) => !current)}
-        type="button"
-      >
-        <span className={value ? 'text-zinc-900' : 'text-zinc-400'}>{formatDateLabel(value)}</span>
-        <span className="text-zinc-400">▦</span>
-      </button>
-      {isOpen ? (
-        <div className="absolute top-full z-30 mt-2 w-72 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl">
-          <div className="flex items-center justify-between">
-            <button
-              className="rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100"
-              onClick={() => moveMonth(-1)}
-              type="button"
-            >
-              ←
-            </button>
-            <p className="text-sm font-semibold text-zinc-950">{monthLabel}</p>
-            <button
-              className="rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100"
-              onClick={() => moveMonth(1)}
-              type="button"
-            >
-              →
-            </button>
-          </div>
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-zinc-400">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-          <div className="mt-2 grid grid-cols-7 gap-1">
-            {calendarDays.map((date, index) =>
-              date ? (
-                <button
-                  className={
-                    toDateValue(date) === value
-                      ? 'h-8 rounded-md bg-brand text-sm font-semibold text-white'
-                      : 'h-8 rounded-md text-sm text-zinc-700 hover:bg-indigo-50 hover:text-brand'
-                  }
-                  key={toDateValue(date)}
-                  onClick={() => {
-                    onChange(toDateValue(date));
-                    setIsOpen(false);
-                  }}
-                  type="button"
-                >
-                  {date.getDate()}
-                </button>
-              ) : (
-                <span key={`empty-${index}`} />
-              ),
-            )}
-          </div>
-          <div className="mt-3 flex justify-between border-t border-zinc-100 pt-3">
-            <button
-              className="text-sm font-medium text-zinc-500 hover:text-danger"
-              onClick={() => {
-                onChange('');
-                setIsOpen(false);
-              }}
-              type="button"
-            >
-              Clear
-            </button>
-            <button
-              className="text-sm font-medium text-brand"
-              onClick={() => {
-                const today = new Date();
-
-                setVisibleMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-                onChange(toDateValue(today));
-                setIsOpen(false);
-              }}
-              type="button"
-            >
-              Today
-            </button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -380,6 +181,17 @@ function CommentCell({ value }: { value?: string }) {
   );
 }
 
+function TransactionField({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 md:block">
+      <span className="shrink-0 text-xs font-semibold uppercase text-zinc-400 md:hidden">
+        {label}
+      </span>
+      <div className="min-w-0 text-right md:text-left">{children}</div>
+    </div>
+  );
+}
+
 export function TransactionsHistory({
   containersEnabled = false,
   error,
@@ -401,6 +213,10 @@ export function TransactionsHistory({
   );
   const containerOptions = useMemo(
     () => getTransactionContainerOptions(transactions),
+    [transactions],
+  );
+  const currencyOptions = useMemo(
+    () => getTransactionCurrencyOptions(transactions),
     [transactions],
   );
   const filteredTransactions = useMemo(
@@ -443,6 +259,8 @@ export function TransactionsHistory({
         actionLabel="Create transaction"
         description="Transactions from Ledger will appear here after the first sync."
         onAction={onCreateTransaction}
+        onSecondAction={() => void onRefresh()}
+        secondActionLabel="Refresh"
         title="No transactions yet"
       />
     );
@@ -460,9 +278,10 @@ export function TransactionsHistory({
           {error ? <p className="mt-1 text-sm text-danger">{error}</p> : null}
           {syncWarning ? <p className="mt-1 text-sm text-amber-700">{syncWarning}</p> : null}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {hasPendingSync ? (
             <Button
+              className="col-span-2 sm:col-span-1"
               disabled={isSyncing}
               isLoading={isSyncing}
               onClick={() => void onRetrySync()}
@@ -471,7 +290,12 @@ export function TransactionsHistory({
               Retry sync
             </Button>
           ) : null}
-          <Button disabled={isLoading} onClick={() => void onRefresh()} variant="secondary">
+          <Button
+            className={hasPendingSync ? undefined : 'col-span-2 sm:col-span-1'}
+            disabled={isLoading}
+            onClick={() => void onRefresh()}
+            variant="secondary"
+          >
             Refresh
           </Button>
         </div>
@@ -486,7 +310,7 @@ export function TransactionsHistory({
             placeholder="Comment, method, category"
             value={filters.query}
           />
-          <FilterSelect
+          <Select
             id="transactions-kind"
             label="Type"
             onChange={(kind) => updateFilters({ kind: kind as TransactionFilters['kind'] })}
@@ -497,7 +321,7 @@ export function TransactionsHistory({
             ]}
             value={filters.kind}
           />
-          <FilterSelect
+          <Select
             id="transactions-category"
             label="Category"
             onChange={(category) => updateFilters({ category })}
@@ -508,25 +332,32 @@ export function TransactionsHistory({
             value={filters.category}
           />
           <Button
+            className="w-full"
             onClick={() => setIsAdvancedFiltersOpen((current) => !current)}
             type="button"
             variant="secondary"
           >
             {isAdvancedFiltersOpen ? 'Hide filters' : 'More filters'}
           </Button>
-          <Button disabled={!isFiltered} onClick={clearFilters} type="button" variant="ghost">
+          <Button
+            className="w-full"
+            disabled={!isFiltered}
+            onClick={clearFilters}
+            type="button"
+            variant="ghost"
+          >
             Clear
           </Button>
         </div>
         {isAdvancedFiltersOpen ? (
-          <div className="mt-4 grid gap-4 rounded-md border border-zinc-200 bg-white p-4 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
-            <DateFilterField
+          <div className="mt-4 grid gap-4 rounded-md border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
+            <DatePicker
               id="transactions-date-from"
               label="Date from"
               onChange={(dateFrom) => updateFilters({ dateFrom })}
               value={filters.dateFrom}
             />
-            <DateFilterField
+            <DatePicker
               id="transactions-date-to"
               label="Date to"
               onChange={(dateTo) => updateFilters({ dateTo })}
@@ -546,8 +377,18 @@ export function TransactionsHistory({
               placeholder="1000"
               value={filters.amountTo}
             />
+            <Select
+              id="transactions-currency"
+              label="Currency"
+              onChange={(currency) => updateFilters({ currency })}
+              options={[
+                { label: 'All currencies', value: '' },
+                ...currencyOptions.map((currency) => ({ label: currency, value: currency })),
+              ]}
+              value={filters.currency}
+            />
             {containersEnabled ? (
-              <FilterSelect
+              <Select
                 id="transactions-container"
                 label="Container"
                 onChange={(container) => updateFilters({ container })}
@@ -558,7 +399,7 @@ export function TransactionsHistory({
                 value={filters.container}
               />
             ) : null}
-            <FilterSelect
+            <Select
               id="transactions-sync-status"
               label="Sync status"
               onChange={(syncStatus) =>
@@ -614,34 +455,48 @@ export function TransactionsHistory({
               <div
                 className={
                   transaction.deletedAt
-                    ? 'grid gap-2 bg-zinc-50 px-5 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3'
-                    : 'grid gap-2 px-5 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3'
+                    ? 'grid gap-3 bg-zinc-50 px-4 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
+                    : 'grid gap-3 px-4 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
                 }
                 key={transaction.id}
               >
-                <div className="text-zinc-500">{transaction.date}</div>
-                <div className="font-medium text-zinc-700">{formatKind(transaction.kind)}</div>
-                <div className="font-medium text-zinc-950">{transaction.categoryName}</div>
-                <div
-                  className={
-                    transaction.kind === 'income'
-                      ? 'font-semibold text-emerald-600 md:text-right'
-                      : 'font-semibold text-danger md:text-right'
-                  }
-                >
-                  {formatMoney(transaction.signedAmount, transaction.currency)}
-                </div>
-                <div className="text-zinc-600">{transaction.paymentMethod || '-'}</div>
-                <CommentCell value={transaction.comment} />
-                <div className="text-zinc-600">{transaction.containerName || '-'}</div>
-                <div>
+                <TransactionField label="Date">
+                  <div className="text-zinc-500">{transaction.date}</div>
+                </TransactionField>
+                <TransactionField label="Type">
+                  <div className="font-medium text-zinc-700">{formatKind(transaction.kind)}</div>
+                </TransactionField>
+                <TransactionField label="Category">
+                  <div className="font-medium text-zinc-950">{transaction.categoryName}</div>
+                </TransactionField>
+                <TransactionField label="Amount">
+                  <div
+                    className={
+                      transaction.kind === 'income'
+                        ? 'font-semibold text-emerald-600 md:text-right'
+                        : 'font-semibold text-danger md:text-right'
+                    }
+                  >
+                    {formatMoney(transaction.signedAmount, transaction.currency)}
+                  </div>
+                </TransactionField>
+                <TransactionField label="Payment">
+                  <div className="text-zinc-600">{transaction.paymentMethod || '-'}</div>
+                </TransactionField>
+                <TransactionField label="Comment">
+                  <CommentCell value={transaction.comment} />
+                </TransactionField>
+                <TransactionField label="Container">
+                  <div className="text-zinc-600">{transaction.containerName || '-'}</div>
+                </TransactionField>
+                <TransactionField label="Status">
                   <div className="flex flex-wrap gap-1">
                     {transaction.deletedAt ? <Badge variant="neutral">Deleted</Badge> : null}
                     <Badge variant={syncStatusVariants[transaction.syncStatus]}>
                       {formatSyncStatus(transaction.syncStatus)}
                     </Badge>
                   </div>
-                </div>
+                </TransactionField>
                 <RowActions
                   onDelete={() => onDeleteTransaction(transaction.id)}
                   onEdit={() => onEditTransaction(transaction)}

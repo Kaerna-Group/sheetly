@@ -4,6 +4,11 @@ import type { Transaction } from '@entities/transaction';
 import { indexedDbService } from '@shared/lib/storage/indexed-db.service';
 
 import { createLocalQueueDataSource } from './local-queue-data-source';
+import { createOfflineTransactionsStorage } from './offline-transactions.storage';
+
+const TEST_SPREADSHEET_ID = 'test-sheet';
+const pendingQueueKey = `spreadsheet:${TEST_SPREADSHEET_ID}:pendingTransactionsQueue`;
+const failedQueueKey = `spreadsheet:${TEST_SPREADSHEET_ID}:failedSyncQueue`;
 
 const transaction: Transaction = {
   id: 'tx-1',
@@ -21,13 +26,17 @@ const transaction: Transaction = {
   syncStatus: 'pending',
 };
 
+function makeDataSource(remoteDataSource?: Parameters<typeof createLocalQueueDataSource>[0]) {
+  return createLocalQueueDataSource(remoteDataSource, TEST_SPREADSHEET_ID);
+}
+
 describe('local queue data source', () => {
   beforeEach(async () => {
     await indexedDbService.clear();
   });
 
   it('stores pending transactions in cache and queue', async () => {
-    const dataSource = createLocalQueueDataSource();
+    const dataSource = makeDataSource();
 
     await expect(dataSource.createTransaction(transaction)).resolves.toMatchObject({
       id: 'tx-1',
@@ -44,7 +53,7 @@ describe('local queue data source', () => {
   });
 
   it('merges create and update into one latest create queue item', async () => {
-    const dataSource = createLocalQueueDataSource();
+    const dataSource = makeDataSource();
 
     await dataSource.createTransaction(transaction);
     await dataSource.updateTransaction({
@@ -54,7 +63,7 @@ describe('local queue data source', () => {
       signedAmount: -300,
     });
 
-    await expect(indexedDbService.get('pendingTransactionsQueue')).resolves.toEqual([
+    await expect(indexedDbService.get(pendingQueueKey)).resolves.toEqual([
       expect.objectContaining({
         operation: 'create',
         transaction: expect.objectContaining({
@@ -67,12 +76,12 @@ describe('local queue data source', () => {
   });
 
   it('removes pending create from queue when transaction is deleted before sync', async () => {
-    const dataSource = createLocalQueueDataSource();
+    const dataSource = makeDataSource();
 
     await dataSource.createTransaction(transaction);
     await dataSource.softDeleteTransaction(transaction.id);
 
-    await expect(indexedDbService.get('pendingTransactionsQueue')).resolves.toEqual([]);
+    await expect(indexedDbService.get(pendingQueueKey)).resolves.toEqual([]);
     await expect(dataSource.getTransactions()).resolves.toEqual([
       expect.objectContaining({
         deletedAt: expect.any(String),
@@ -82,12 +91,12 @@ describe('local queue data source', () => {
   });
 
   it('replaces pending update with delete queue item', async () => {
-    const dataSource = createLocalQueueDataSource();
+    const dataSource = makeDataSource();
 
     await dataSource.updateTransaction(transaction);
     await dataSource.softDeleteTransaction(transaction.id);
 
-    await expect(indexedDbService.get('pendingTransactionsQueue')).resolves.toEqual([
+    await expect(indexedDbService.get(pendingQueueKey)).resolves.toEqual([
       expect.objectContaining({
         operation: 'delete',
         transactionId: 'tx-1',
@@ -108,7 +117,7 @@ describe('local queue data source', () => {
       syncPending: vi.fn(),
       updateTransaction: vi.fn(),
     };
-    const dataSource = createLocalQueueDataSource(remoteDataSource);
+    const dataSource = makeDataSource(remoteDataSource);
 
     await dataSource.createTransaction(transaction);
     await expect(dataSource.syncPending()).resolves.toEqual({
@@ -146,7 +155,7 @@ describe('local queue data source', () => {
       syncPending: vi.fn(),
       updateTransaction: vi.fn(),
     };
-    const dataSource = createLocalQueueDataSource(remoteDataSource);
+    const dataSource = makeDataSource(remoteDataSource);
 
     await dataSource.createTransaction(transaction);
     await expect(dataSource.syncPending()).resolves.toEqual({
@@ -166,7 +175,7 @@ describe('local queue data source', () => {
       syncPending: vi.fn(),
       updateTransaction: vi.fn(),
     };
-    const dataSource = createLocalQueueDataSource(remoteDataSource);
+    const dataSource = makeDataSource(remoteDataSource);
 
     await dataSource.createTransaction(transaction);
     await expect(dataSource.syncPending()).resolves.toEqual({
@@ -174,7 +183,7 @@ describe('local queue data source', () => {
       synced: 0,
       total: 1,
     });
-    await expect(indexedDbService.get('failedSyncQueue')).resolves.toEqual([
+    await expect(indexedDbService.get(failedQueueKey)).resolves.toEqual([
       expect.objectContaining({
         attempts: 1,
         lastError: 'Network failed',
@@ -186,11 +195,57 @@ describe('local queue data source', () => {
       synced: 0,
       total: 1,
     });
-    await expect(indexedDbService.get('failedSyncQueue')).resolves.toEqual([
+    await expect(indexedDbService.get(failedQueueKey)).resolves.toEqual([
       expect.objectContaining({
         attempts: 2,
         transactionId: 'tx-1',
       }),
     ]);
+  });
+
+  it('keeps caches isolated between different spreadsheets', async () => {
+    const dsA = createLocalQueueDataSource(undefined, 'sheet-a');
+    const dsB = createLocalQueueDataSource(undefined, 'sheet-b');
+
+    await dsA.createTransaction({ ...transaction, id: 'tx-a' });
+    await dsB.createTransaction({ ...transaction, id: 'tx-b' });
+
+    await expect(dsA.getTransactions()).resolves.toEqual([expect.objectContaining({ id: 'tx-a' })]);
+    await expect(dsB.getTransactions()).resolves.toEqual([expect.objectContaining({ id: 'tx-b' })]);
+  });
+
+  it('pending queue from spreadsheet-a is not synced via spreadsheet-b data source', async () => {
+    const remoteDataSource = {
+      createTransaction: vi.fn().mockResolvedValue({
+        ...transaction,
+        source: 'google-sheets',
+        syncStatus: 'synced',
+      }),
+      getCategories: vi.fn(),
+      getTransactions: vi.fn().mockResolvedValue([]),
+      softDeleteTransaction: vi.fn(),
+      syncPending: vi.fn(),
+      updateTransaction: vi.fn(),
+    };
+    const dsA = createLocalQueueDataSource(undefined, 'sheet-a');
+    const dsB = createLocalQueueDataSource(remoteDataSource, 'sheet-b');
+
+    await dsA.createTransaction(transaction);
+
+    await expect(dsB.syncPending()).resolves.toEqual({ failed: 0, synced: 0, total: 0 });
+    expect(remoteDataSource.createTransaction).not.toHaveBeenCalled();
+
+    const storageA = createOfflineTransactionsStorage('sheet-a');
+    await expect(storageA.getPendingQueue()).resolves.toHaveLength(1);
+  });
+
+  it('switching to a new spreadsheet sees empty cache even when old one has data', async () => {
+    const storageOld = createOfflineTransactionsStorage('old-sheet');
+
+    await storageOld.cacheTransactions([{ ...transaction, id: 'old-tx' }]);
+
+    const storageNew = createOfflineTransactionsStorage('new-sheet');
+
+    await expect(storageNew.getCachedTransactions()).resolves.toEqual([]);
   });
 });

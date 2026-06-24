@@ -2,6 +2,7 @@ import type { TransactionKind } from '@entities/transaction';
 
 export type MonthlyStats = {
   balance: number;
+  currency: string;
   expense: number;
   income: number;
   label: string;
@@ -11,6 +12,7 @@ export type MonthlyStats = {
 export type CategoryStats = {
   categoryName: string;
   count: number;
+  currency: string;
   expense: number;
   income: number;
   kind: TransactionKind;

@@ -10,6 +10,7 @@ import type { CategoryStats, MonthlyStats } from '../types/analytics-stat.types'
 
 type ReadAnalyticsStatsParams = {
   accessToken: string | null;
+  forceLocal?: boolean;
   googleSheetsClient?: Pick<GoogleSheetsClient, 'readRange'>;
   spreadsheetId: string | null;
   transactions: Transaction[];
@@ -33,13 +34,14 @@ function isCategoryStats(value: CategoryStats | null): value is CategoryStats {
 
 export async function readAnalyticsStats({
   accessToken,
+  forceLocal = false,
   googleSheetsClient = createGoogleSheetsClient(),
   spreadsheetId,
   transactions,
 }: ReadAnalyticsStatsParams): Promise<AnalyticsStats> {
   const localStats = buildLocalAnalyticsStats(transactions);
 
-  if (!accessToken || !spreadsheetId) {
+  if (!accessToken || !spreadsheetId || forceLocal) {
     return localStats;
   }
 
@@ -56,8 +58,12 @@ export async function readAnalyticsStats({
         spreadsheetId,
       }),
     ]);
-    const monthlyStats = monthlyRange.values.map(mapRowToMonthlyStats).filter(isMonthlyStats);
-    const categoryStats = categoryRange.values.map(mapRowToCategoryStats).filter(isCategoryStats);
+    const monthlyStats = (monthlyRange.values ?? [])
+      .map(mapRowToMonthlyStats)
+      .filter(isMonthlyStats);
+    const categoryStats = (categoryRange.values ?? [])
+      .map(mapRowToCategoryStats)
+      .filter(isCategoryStats);
 
     if (!monthlyStats.length && !categoryStats.length) {
       return localStats;

@@ -16,6 +16,7 @@ export type LocalStorageKey =
   | 'templateReadyAt'
   | 'templateReadySpreadsheetId'
   | 'templateReadyVersion'
+  | 'analyticsActiveCurrency'
   | 'analyticsChartSlots'
   | 'analyticsWideChartId'
   | 'googleAuthEverConnected';
@@ -38,6 +39,7 @@ export const localStorageKeys: LocalStorageKey[] = [
   'templateReadyAt',
   'templateReadySpreadsheetId',
   'templateReadyVersion',
+  'analyticsActiveCurrency',
   'analyticsChartSlots',
   'analyticsWideChartId',
   'googleAuthEverConnected',

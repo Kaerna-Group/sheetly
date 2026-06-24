@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { offlineTransactionsStorage } from '../lib/offline-transactions.storage';
+import { createOfflineTransactionsStorage } from '../lib/offline-transactions.storage';
 import type { TransactionQueueItem } from '../types/sync-queue.type';
 
 export type OfflineSyncStatus = {
@@ -25,13 +25,17 @@ const defaultStatus: OfflineSyncStatus = {
   totalQueued: 0,
 };
 
-export function useOfflineSyncStatus() {
+export function useOfflineSyncStatus(spreadsheetId: string | null = null) {
+  const storage = useMemo(
+    () => createOfflineTransactionsStorage(spreadsheetId ?? '__unscoped__'),
+    [spreadsheetId],
+  );
   const [status, setStatus] = useState<OfflineSyncStatus>(defaultStatus);
 
   const refresh = useCallback(async () => {
     const [diagnostics, queueItems] = await Promise.all([
-      offlineTransactionsStorage.getSyncDiagnostics(),
-      offlineTransactionsStorage.getQueueItems(),
+      storage.getSyncDiagnostics(),
+      storage.getQueueItems(),
     ]);
 
     setStatus({
@@ -39,15 +43,15 @@ export function useOfflineSyncStatus() {
       isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
       queueItems,
     });
-  }, []);
+  }, [storage]);
 
   useEffect(() => {
     let isActive = true;
 
     async function refreshIfActive() {
       const [diagnostics, queueItems] = await Promise.all([
-        offlineTransactionsStorage.getSyncDiagnostics(),
-        offlineTransactionsStorage.getQueueItems(),
+        storage.getSyncDiagnostics(),
+        storage.getQueueItems(),
       ]);
 
       if (isActive) {
@@ -75,7 +79,7 @@ export function useOfflineSyncStatus() {
       window.removeEventListener('online', handleNetworkChange);
       window.removeEventListener('offline', handleNetworkChange);
     };
-  }, []);
+  }, [storage]);
 
   return {
     refresh,

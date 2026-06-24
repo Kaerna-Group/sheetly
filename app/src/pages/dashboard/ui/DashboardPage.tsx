@@ -4,7 +4,11 @@ import type { Transaction } from '@entities/transaction';
 import { CreateTransactionModal } from '@features/create-transaction';
 import { GoogleConnectButton, GoogleConnectionStatus, useGoogleAuth } from '@features/google-auth';
 import { useContainers } from '@features/manage-containers';
-import { calculateTransactionSummary, useTransactions } from '@features/manage-transactions';
+import {
+  calculateTransactionSummary,
+  type CurrencySummary,
+  useTransactions,
+} from '@features/manage-transactions';
 import { AppLayout } from '@widgets/app-layout';
 import { DashboardAnalytics } from '@widgets/dashboard-analytics';
 import { TransactionsHistory } from '@widgets/transactions-history';
@@ -13,13 +17,39 @@ import { Card } from '@shared/ui/card';
 import { ConfirmModal } from '@shared/ui/confirm-modal';
 import { PageHeader } from '@shared/ui/page-header';
 
-const defaultCurrency = 'UAH';
-
-function formatMoney(amount: number, currency = defaultCurrency) {
+function formatMoney(amount: number, currency: string) {
   return `${amount.toLocaleString('en-US', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   })} ${currency}`;
+}
+
+type SummaryCardProps = {
+  label: string;
+  getValue: (entry: CurrencySummary) => number;
+  summaries: CurrencySummary[];
+};
+
+function SummaryCard({ label, getValue, summaries }: SummaryCardProps) {
+  return (
+    <Card>
+      <p className="text-sm text-zinc-500">{label}</p>
+      {summaries.length === 0 ? (
+        <p className="mt-2 text-xl font-semibold text-zinc-500 md:text-2xl">—</p>
+      ) : (
+        <ul className="mt-2 space-y-1">
+          {summaries.map((entry) => (
+            <li
+              className="break-words text-xl font-semibold text-zinc-950 md:text-2xl"
+              key={entry.currency}
+            >
+              {formatMoney(getValue(entry), entry.currency)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
 }
 
 export function DashboardPage() {
@@ -43,8 +73,7 @@ export function DashboardPage() {
     updateAndRefresh,
   } = useTransactions();
   const activeTransactions = transactions.filter((transaction) => !transaction.deletedAt);
-  const summary = calculateTransactionSummary(activeTransactions);
-  const currency = activeTransactions[0]?.currency ?? defaultCurrency;
+  const summaries = calculateTransactionSummary(activeTransactions);
   const lastSelectedContainerId = localStorage.getItem('lastSelectedContainerId');
   const initialContainer =
     containers.find((container) => container.id === lastSelectedContainerId) ??
@@ -65,25 +94,10 @@ export function DashboardPage() {
         description="Track income, expenses and balance from your Google Sheets ledger."
         title="Dashboard"
       />
-      <section className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <p className="text-sm text-zinc-500">Income</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-950">
-            {formatMoney(summary.income, currency)}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-sm text-zinc-500">Expense</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-950">
-            {formatMoney(summary.expense, currency)}
-          </p>
-        </Card>
-        <Card>
-          <p className="text-sm text-zinc-500">Balance</p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-950">
-            {formatMoney(summary.balance, currency)}
-          </p>
-        </Card>
+      <section className="grid gap-3 sm:grid-cols-3 md:gap-4">
+        <SummaryCard getValue={(entry) => entry.income} label="Income" summaries={summaries} />
+        <SummaryCard getValue={(entry) => entry.expense} label="Expense" summaries={summaries} />
+        <SummaryCard getValue={(entry) => entry.balance} label="Balance" summaries={summaries} />
       </section>
       <DashboardAnalytics transactions={activeTransactions} />
       <TransactionsHistory
