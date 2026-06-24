@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-import type { CurrencyCode } from '@entities/app-settings';
 import type { Category } from '@entities/category';
 import type { Container } from '@entities/container';
 import type { Transaction } from '@entities/transaction';
 import { CategoryCombobox } from '@features/manage-categories';
 import { ContainerCombobox } from '@features/manage-containers';
+import { CurrencySelect } from '@features/manage-currencies';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { localStorageService } from '@shared/lib/storage/local-storage.service';
@@ -133,7 +133,7 @@ export function CreateTransactionModal({
       ? {
           color: '#6366f1',
           createdAt: initialTransaction.createdAt,
-          currency: initialTransaction.currency as CurrencyCode,
+          currency: initialTransaction.currency,
           icon: 'wallet',
           id: initialTransaction.containerId,
           isDefault: false,
@@ -250,14 +250,8 @@ export function CreateTransactionModal({
             type="date"
             value={values.date}
           />
-          <Input
-            id="transaction-currency"
-            label="Currency"
-            maxLength={3}
-            onChange={(event) =>
-              setValues({ ...values, currency: event.target.value.toUpperCase() })
-            }
-            placeholder="UAH"
+          <CurrencySelect
+            onChange={(currency) => setValues({ ...values, currency })}
             value={values.currency}
           />
         </div>
@@ -284,7 +278,7 @@ export function CreateTransactionModal({
         <CategoryCombobox kind={values.kind} onChange={selectCategory} value={selectedCategory} />
         {containersEnabled ? (
           <ContainerCombobox
-            currency={values.currency as CurrencyCode}
+            currency={values.currency}
             onChange={selectContainer}
             value={selectedContainer}
           />
@@ -303,11 +297,16 @@ export function CreateTransactionModal({
           placeholder="Optional note"
           value={values.comment}
         />
-        <div className="flex justify-end gap-2">
-          <Button disabled={isCreating} onClick={onClose} variant="ghost">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            className="w-full sm:w-auto"
+            disabled={isCreating}
+            onClick={onClose}
+            variant="ghost"
+          >
             Cancel
           </Button>
-          <Button isLoading={isCreating} type="submit">
+          <Button className="w-full sm:w-auto" isLoading={isCreating} type="submit">
             {mode === 'edit' ? 'Save transaction' : 'Create transaction'}
           </Button>
         </div>

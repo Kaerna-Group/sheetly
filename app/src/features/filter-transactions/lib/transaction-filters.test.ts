@@ -6,6 +6,7 @@ import {
   createDefaultTransactionFilters,
   filterTransactions,
   getTransactionCategoryOptions,
+  getTransactionCurrencyOptions,
 } from './transaction-filters';
 
 function createTransaction(overrides: Partial<Transaction>): Transaction {
@@ -175,5 +176,70 @@ describe('getTransactionCategoryOptions', () => {
         }),
       ]),
     ).toEqual(['Food', 'Salary', 'Transport']);
+  });
+});
+
+describe('filterTransactions currency filter', () => {
+  const multiCurrencyTransactions = [
+    createTransaction({ id: 'uah-1', currency: 'UAH' }),
+    createTransaction({ id: 'usd-1', currency: 'USD' }),
+    createTransaction({ id: 'eur-1', currency: 'EUR' }),
+    createTransaction({ id: 'uah-2', currency: 'UAH' }),
+  ];
+
+  it('shows all currencies when filter is empty', () => {
+    expect(
+      filterTransactions(multiCurrencyTransactions, createDefaultTransactionFilters()).map(
+        (transaction) => transaction.id,
+      ),
+    ).toEqual(['uah-1', 'usd-1', 'eur-1', 'uah-2']);
+  });
+
+  it('shows only UAH transactions', () => {
+    expect(
+      filterTransactions(multiCurrencyTransactions, {
+        ...createDefaultTransactionFilters(),
+        currency: 'UAH',
+      }).map((transaction) => transaction.id),
+    ).toEqual(['uah-1', 'uah-2']);
+  });
+
+  it('shows only USD transactions', () => {
+    expect(
+      filterTransactions(multiCurrencyTransactions, {
+        ...createDefaultTransactionFilters(),
+        currency: 'USD',
+      }).map((transaction) => transaction.id),
+    ).toEqual(['usd-1']);
+  });
+
+  it('does not break other active filters', () => {
+    expect(
+      filterTransactions(
+        [
+          ...multiCurrencyTransactions,
+          createTransaction({
+            id: 'uah-income',
+            currency: 'UAH',
+            kind: 'income',
+            signedAmount: 500,
+          }),
+        ],
+        { ...createDefaultTransactionFilters(), currency: 'UAH', kind: 'income' },
+      ).map((transaction) => transaction.id),
+    ).toEqual(['uah-income']);
+  });
+});
+
+describe('getTransactionCurrencyOptions', () => {
+  it('dedupes and sorts currencies', () => {
+    expect(
+      getTransactionCurrencyOptions([
+        createTransaction({ currency: 'USD', id: 'usd-1' }),
+        createTransaction({ currency: 'UAH', id: 'uah-1' }),
+        createTransaction({ currency: 'EUR', id: 'eur-1' }),
+        createTransaction({ currency: 'UAH', id: 'uah-2' }),
+      ]),
+    ).toEqual(['EUR', 'UAH', 'USD']);
   });
 });

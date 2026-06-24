@@ -1,4 +1,3 @@
-import type { CurrencyCode } from '@entities/app-settings';
 import type { Container } from '@entities/container';
 
 export function mapContainerToRow(container: Container): string[] {
@@ -23,7 +22,7 @@ export function mapRowToContainer(row: string[]): Container | null {
   return {
     color: color || '#6366f1',
     createdAt,
-    currency: currency.toUpperCase() as CurrencyCode,
+    currency: currency.toUpperCase(),
     icon: icon || 'wallet',
     id,
     isDefault: isDefault === 'TRUE',

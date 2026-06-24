@@ -52,6 +52,12 @@ const styles: Record<string, SheetStyle> = {
     tabColor: { blue: 0.12, green: 0.46, red: 0.06 },
     widths: [160, 180, 110, 110, 120, 110, 180],
   },
+  [sheetNames.currencies]: {
+    columns: 7,
+    headerColor: { blue: 0.1, green: 0.55, red: 0.85 },
+    tabColor: { blue: 0.1, green: 0.55, red: 0.85 },
+    widths: [90, 90, 200, 90, 120, 110, 110],
+  },
   [sheetNames.summary]: {
     columns: 2,
     headerColor: { blue: 0.16, green: 0.18, red: 0.07 },
@@ -260,6 +266,10 @@ function buildSheetSpecificFormattingRequests(
 
   if (sheetName === sheetNames.containers) {
     return [buildNumberFormatRequest(sheetId, 6, 7, 'DATE_TIME', 'yyyy-mm-dd hh:mm')];
+  }
+
+  if (sheetName === sheetNames.currencies) {
+    return [buildNumberFormatRequest(sheetId, 4, 5, 'NUMBER', '0')];
   }
 
   return [];

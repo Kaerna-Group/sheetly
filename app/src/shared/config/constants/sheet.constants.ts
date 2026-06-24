@@ -2,6 +2,7 @@ export const sheetNames = {
   ledger: 'Ledger',
   categories: 'Categories',
   containers: 'Containers',
+  currencies: 'Currencies',
   summary: 'Summary',
   monthlyStats: 'MonthlyStats',
   categoryStats: 'CategoryStats',
@@ -39,6 +40,16 @@ export const containerHeaders = [
   'createdAt',
 ] as const;
 
+export const currencyHeaders = [
+  'id',
+  'code',
+  'name',
+  'symbol',
+  'decimalDigits',
+  'isDefault',
+  'isEnabled',
+] as const;
+
 export const summaryHeaders = ['metric', 'value'] as const;
 
 export const monthlyStatsHeaders = ['month', 'income', 'expense', 'balance'] as const;
@@ -47,12 +58,13 @@ export const categoryStatsHeaders = ['category', 'kind', 'total', 'count'] as co
 
 export const settingsHeaders = ['key', 'value'] as const;
 
-export const templateVersion = '2';
+export const templateVersion = '3';
 
 export const requiredSheetNames = [
   sheetNames.ledger,
   sheetNames.categories,
   sheetNames.containers,
+  sheetNames.currencies,
   sheetNames.summary,
   sheetNames.monthlyStats,
   sheetNames.categoryStats,
@@ -66,6 +78,9 @@ export const sheetRanges = {
   containers: `${sheetNames.containers}!A:G`,
   containersData: `${sheetNames.containers}!A2:G`,
   containersHeaders: `${sheetNames.containers}!A1:G1`,
+  currencies: `${sheetNames.currencies}!A:G`,
+  currenciesData: `${sheetNames.currencies}!A2:G`,
+  currenciesHeaders: `${sheetNames.currencies}!A1:G1`,
   ledger: `${sheetNames.ledger}!A:P`,
   ledgerData: `${sheetNames.ledger}!A2:P`,
   ledgerHeaders: `${sheetNames.ledger}!A1:P1`,

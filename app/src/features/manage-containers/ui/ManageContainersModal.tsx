@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
-import type { CurrencyCode } from '@entities/app-settings';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Modal } from '@shared/ui/modal';
+import { CurrencySelect } from '@features/manage-currencies';
 
 import { useContainers } from '../model/useContainers';
 
@@ -17,7 +17,7 @@ export function ManageContainersModal({ isOpen, onClose }: ManageContainersModal
   const { containers, createAndSelectContainer, error, isCreating, isLoading, warning } =
     useContainers();
   const [name, setName] = useState('');
-  const [currency, setCurrency] = useState<CurrencyCode>('UAH');
+  const [currency, setCurrency] = useState('UAH');
 
   async function submitContainer() {
     if (!name.trim()) {
@@ -52,13 +52,7 @@ export function ManageContainersModal({ isOpen, onClose }: ManageContainersModal
             placeholder="Cash, Savings, EUR card"
             value={name}
           />
-          <Input
-            id="container-currency"
-            label="Currency"
-            maxLength={3}
-            onChange={(event) => setCurrency(event.target.value.toUpperCase() as CurrencyCode)}
-            value={currency}
-          />
+          <CurrencySelect onChange={setCurrency} value={currency} />
           <Button isLoading={isCreating} onClick={() => void submitContainer()}>
             Add
           </Button>

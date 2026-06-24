@@ -26,6 +26,7 @@ describe('setupSpreadsheet', () => {
             'Ledger',
             'Categories',
             'Containers',
+            'Currencies',
             'Summary',
             'MonthlyStats',
             'CategoryStats',
@@ -53,6 +54,7 @@ describe('setupSpreadsheet', () => {
       createdSheets: [
         'Categories',
         'Containers',
+        'Currencies',
         'Summary',
         'MonthlyStats',
         'CategoryStats',
@@ -97,6 +99,9 @@ describe('setupSpreadsheet', () => {
         expect.objectContaining({
           range: 'Containers!A2:G',
         }),
+        expect.objectContaining({
+          range: 'Currencies!A2:G',
+        }),
       ]),
       spreadsheetId: 'sheet-id',
     });
@@ -112,6 +117,7 @@ describe('setupSpreadsheet', () => {
           'Ledger',
           'Categories',
           'Containers',
+          'Currencies',
           'Summary',
           'MonthlyStats',
           'CategoryStats',
@@ -148,6 +154,9 @@ describe('setupSpreadsheet', () => {
       expect.arrayContaining([
         expect.objectContaining({
           range: 'Categories!A2:F',
+        }),
+        expect.objectContaining({
+          range: 'Currencies!A2:G',
         }),
       ]),
     );

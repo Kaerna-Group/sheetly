@@ -8,6 +8,7 @@ export function createDefaultTransactionFilters(): TransactionFilters {
     amountTo: '',
     category: '',
     container: '',
+    currency: '',
     dateFrom: '',
     dateTo: '',
     kind: 'all',
@@ -93,6 +94,10 @@ export function filterTransactions(
       return false;
     }
 
+    if (filters.currency && transaction.currency !== filters.currency) {
+      return false;
+    }
+
     return matchesQuery(transaction, filters.query);
   });
 }
@@ -106,5 +111,11 @@ export function getTransactionCategoryOptions(transactions: Transaction[]) {
 export function getTransactionContainerOptions(transactions: Transaction[]) {
   return [...new Set(transactions.map((transaction) => transaction.containerName))]
     .filter((containerName): containerName is string => Boolean(containerName))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+export function getTransactionCurrencyOptions(transactions: Transaction[]) {
+  return [...new Set(transactions.map((transaction) => transaction.currency))]
+    .filter(Boolean)
     .sort((left, right) => left.localeCompare(right));
 }

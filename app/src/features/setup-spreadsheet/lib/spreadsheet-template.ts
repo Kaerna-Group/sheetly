@@ -1,5 +1,6 @@
 import { getDefaultCategories } from '@entities/category';
 import { getDefaultContainers } from '@entities/container';
+import { getDefaultCurrencies } from '@entities/currency';
 import type {
   SpreadsheetMetadata,
   SpreadsheetBatchUpdateRequest,
@@ -9,6 +10,7 @@ import {
   categoryStatsHeaders,
   categoryHeaders,
   containerHeaders,
+  currencyHeaders,
   ledgerHeaders,
   monthlyStatsHeaders,
   requiredSheetNames,
@@ -19,6 +21,7 @@ import {
 } from '@shared/config/constants/sheet.constants';
 import { mapCategoryToRow } from '@features/manage-categories';
 import { mapContainerToRow } from '@features/manage-containers';
+import { mapCurrencyToRow } from '@features/manage-currencies';
 
 const monthlyStatsFormula =
   '=IFERROR(QUERY(FILTER({TEXT(Ledger!B2:B,"yyyy-mm"),IF(Ledger!C2:C="income",Ledger!E2:E,0),IF(Ledger!C2:C="expense",Ledger!E2:E,0),Ledger!F2:F},Ledger!A2:A<>"",Ledger!N2:N=""),"select Col1, sum(Col2), sum(Col3), sum(Col4) group by Col1 label Col1 \'\', sum(Col2) \'\', sum(Col3) \'\', sum(Col4) \'\'",0),)';
@@ -50,7 +53,15 @@ export function buildAddSheetRequests(sheetNames: string[]): SpreadsheetBatchUpd
   }));
 }
 
-export function buildTemplateValueRanges(includeDefaultCategories: boolean): ValueRange[] {
+export type BuildTemplateValueRangesOptions = {
+  includeDefaultCategories: boolean;
+  includeDefaultCurrencies: boolean;
+};
+
+export function buildTemplateValueRanges({
+  includeDefaultCategories,
+  includeDefaultCurrencies,
+}: BuildTemplateValueRangesOptions): ValueRange[] {
   const valueRanges: ValueRange[] = [
     {
       range: sheetRanges.ledgerHeaders,
@@ -63,6 +74,10 @@ export function buildTemplateValueRanges(includeDefaultCategories: boolean): Val
     {
       range: sheetRanges.containersHeaders,
       values: [[...containerHeaders]],
+    },
+    {
+      range: sheetRanges.currenciesHeaders,
+      values: [[...currencyHeaders]],
     },
     {
       range: sheetRanges.settingsHeaders,
@@ -109,6 +124,13 @@ export function buildTemplateValueRanges(includeDefaultCategories: boolean): Val
     valueRanges.push({
       range: sheetRanges.containersData,
       values: getDefaultContainers().map(mapContainerToRow),
+    });
+  }
+
+  if (includeDefaultCurrencies) {
+    valueRanges.push({
+      range: sheetRanges.currenciesData,
+      values: getDefaultCurrencies().map(mapCurrencyToRow),
     });
   }
 

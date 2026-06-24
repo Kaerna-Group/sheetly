@@ -1,1 +1,1 @@
-export type CurrencyCode = 'UAH' | 'USD' | 'EUR';
+export type CurrencyCode = string;

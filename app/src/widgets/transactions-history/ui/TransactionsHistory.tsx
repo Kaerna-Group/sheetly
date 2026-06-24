@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { Transaction } from '@entities/transaction';
 import {
@@ -6,6 +6,7 @@ import {
   filterTransactions,
   getTransactionContainerOptions,
   getTransactionCategoryOptions,
+  getTransactionCurrencyOptions,
   type TransactionFilters,
 } from '@features/filter-transactions';
 import { Badge, type BadgeVariant } from '@shared/ui/badge';
@@ -100,6 +101,7 @@ function hasActiveFilters(filters: TransactionFilters) {
     filters.amountTo ||
     filters.category ||
     filters.container ||
+    filters.currency ||
     filters.dateFrom ||
     filters.dateTo ||
     filters.kind !== 'all' ||
@@ -244,7 +246,7 @@ function DateFilterField({ id, label, onChange, value }: DateFilterFieldProps) {
         <span className="text-zinc-400">▦</span>
       </button>
       {isOpen ? (
-        <div className="absolute top-full z-30 mt-2 w-72 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl">
+        <div className="absolute top-full z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-lg border border-zinc-200 bg-white p-3 shadow-xl">
           <div className="flex items-center justify-between">
             <button
               className="rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100"
@@ -380,6 +382,17 @@ function CommentCell({ value }: { value?: string }) {
   );
 }
 
+function TransactionField({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 md:block">
+      <span className="shrink-0 text-xs font-semibold uppercase text-zinc-400 md:hidden">
+        {label}
+      </span>
+      <div className="min-w-0 text-right md:text-left">{children}</div>
+    </div>
+  );
+}
+
 export function TransactionsHistory({
   containersEnabled = false,
   error,
@@ -401,6 +414,10 @@ export function TransactionsHistory({
   );
   const containerOptions = useMemo(
     () => getTransactionContainerOptions(transactions),
+    [transactions],
+  );
+  const currencyOptions = useMemo(
+    () => getTransactionCurrencyOptions(transactions),
     [transactions],
   );
   const filteredTransactions = useMemo(
@@ -460,9 +477,10 @@ export function TransactionsHistory({
           {error ? <p className="mt-1 text-sm text-danger">{error}</p> : null}
           {syncWarning ? <p className="mt-1 text-sm text-amber-700">{syncWarning}</p> : null}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {hasPendingSync ? (
             <Button
+              className="col-span-2 sm:col-span-1"
               disabled={isSyncing}
               isLoading={isSyncing}
               onClick={() => void onRetrySync()}
@@ -471,7 +489,12 @@ export function TransactionsHistory({
               Retry sync
             </Button>
           ) : null}
-          <Button disabled={isLoading} onClick={() => void onRefresh()} variant="secondary">
+          <Button
+            className={hasPendingSync ? undefined : 'col-span-2 sm:col-span-1'}
+            disabled={isLoading}
+            onClick={() => void onRefresh()}
+            variant="secondary"
+          >
             Refresh
           </Button>
         </div>
@@ -508,18 +531,25 @@ export function TransactionsHistory({
             value={filters.category}
           />
           <Button
+            className="w-full"
             onClick={() => setIsAdvancedFiltersOpen((current) => !current)}
             type="button"
             variant="secondary"
           >
             {isAdvancedFiltersOpen ? 'Hide filters' : 'More filters'}
           </Button>
-          <Button disabled={!isFiltered} onClick={clearFilters} type="button" variant="ghost">
+          <Button
+            className="w-full"
+            disabled={!isFiltered}
+            onClick={clearFilters}
+            type="button"
+            variant="ghost"
+          >
             Clear
           </Button>
         </div>
         {isAdvancedFiltersOpen ? (
-          <div className="mt-4 grid gap-4 rounded-md border border-zinc-200 bg-white p-4 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
+          <div className="mt-4 grid gap-4 rounded-md border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
             <DateFilterField
               id="transactions-date-from"
               label="Date from"
@@ -545,6 +575,16 @@ export function TransactionsHistory({
               onChange={(event) => updateFilters({ amountTo: event.target.value })}
               placeholder="1000"
               value={filters.amountTo}
+            />
+            <FilterSelect
+              id="transactions-currency"
+              label="Currency"
+              onChange={(currency) => updateFilters({ currency })}
+              options={[
+                { label: 'All currencies', value: '' },
+                ...currencyOptions.map((currency) => ({ label: currency, value: currency })),
+              ]}
+              value={filters.currency}
             />
             {containersEnabled ? (
               <FilterSelect
@@ -614,34 +654,48 @@ export function TransactionsHistory({
               <div
                 className={
                   transaction.deletedAt
-                    ? 'grid gap-2 bg-zinc-50 px-5 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3'
-                    : 'grid gap-2 px-5 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3'
+                    ? 'grid gap-3 bg-zinc-50 px-4 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
+                    : 'grid gap-3 px-4 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
                 }
                 key={transaction.id}
               >
-                <div className="text-zinc-500">{transaction.date}</div>
-                <div className="font-medium text-zinc-700">{formatKind(transaction.kind)}</div>
-                <div className="font-medium text-zinc-950">{transaction.categoryName}</div>
-                <div
-                  className={
-                    transaction.kind === 'income'
-                      ? 'font-semibold text-emerald-600 md:text-right'
-                      : 'font-semibold text-danger md:text-right'
-                  }
-                >
-                  {formatMoney(transaction.signedAmount, transaction.currency)}
-                </div>
-                <div className="text-zinc-600">{transaction.paymentMethod || '-'}</div>
-                <CommentCell value={transaction.comment} />
-                <div className="text-zinc-600">{transaction.containerName || '-'}</div>
-                <div>
+                <TransactionField label="Date">
+                  <div className="text-zinc-500">{transaction.date}</div>
+                </TransactionField>
+                <TransactionField label="Type">
+                  <div className="font-medium text-zinc-700">{formatKind(transaction.kind)}</div>
+                </TransactionField>
+                <TransactionField label="Category">
+                  <div className="font-medium text-zinc-950">{transaction.categoryName}</div>
+                </TransactionField>
+                <TransactionField label="Amount">
+                  <div
+                    className={
+                      transaction.kind === 'income'
+                        ? 'font-semibold text-emerald-600 md:text-right'
+                        : 'font-semibold text-danger md:text-right'
+                    }
+                  >
+                    {formatMoney(transaction.signedAmount, transaction.currency)}
+                  </div>
+                </TransactionField>
+                <TransactionField label="Payment">
+                  <div className="text-zinc-600">{transaction.paymentMethod || '-'}</div>
+                </TransactionField>
+                <TransactionField label="Comment">
+                  <CommentCell value={transaction.comment} />
+                </TransactionField>
+                <TransactionField label="Container">
+                  <div className="text-zinc-600">{transaction.containerName || '-'}</div>
+                </TransactionField>
+                <TransactionField label="Status">
                   <div className="flex flex-wrap gap-1">
                     {transaction.deletedAt ? <Badge variant="neutral">Deleted</Badge> : null}
                     <Badge variant={syncStatusVariants[transaction.syncStatus]}>
                       {formatSyncStatus(transaction.syncStatus)}
                     </Badge>
                   </div>
-                </div>
+                </TransactionField>
                 <RowActions
                   onDelete={() => onDeleteTransaction(transaction.id)}
                   onEdit={() => onEditTransaction(transaction)}

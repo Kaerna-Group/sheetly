@@ -7,6 +7,7 @@ export type TransactionFilters = {
   amountTo: string;
   category: string;
   container: string;
+  currency: string;
   dateFrom: string;
   dateTo: string;
   kind: TransactionKindFilter;
