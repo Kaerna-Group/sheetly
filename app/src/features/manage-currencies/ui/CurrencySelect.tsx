@@ -47,7 +47,7 @@ export function CurrencySelect({
 
   return (
     <Select
-      hint={warning}
+      hint={warning ?? undefined}
       id={id}
       isLoading={isLoading}
       label={label}
