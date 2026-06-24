@@ -225,24 +225,25 @@ export function CreateTransactionModal({
         <Select
           id="transaction-kind"
           label="Type"
-          onChange={(event) => {
-            const nextKind = event.target.value as 'income' | 'expense';
+          onChange={(nextKind) => {
+            const kind = nextKind as 'income' | 'expense';
 
             setValues({
               ...values,
-              categoryId: selectedCategory?.kind === nextKind ? values.categoryId : '',
-              categoryName: selectedCategory?.kind === nextKind ? values.categoryName : '',
-              kind: nextKind,
+              categoryId: selectedCategory?.kind === kind ? values.categoryId : '',
+              categoryName: selectedCategory?.kind === kind ? values.categoryName : '',
+              kind,
             });
             setSelectedCategory((currentCategory) =>
-              currentCategory?.kind === nextKind ? currentCategory : null,
+              currentCategory?.kind === kind ? currentCategory : null,
             );
           }}
+          options={[
+            { label: 'Expense', value: 'expense' },
+            { label: 'Income', value: 'income' },
+          ]}
           value={values.kind}
-        >
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
-        </Select>
+        />
         <div className="grid gap-4 md:grid-cols-2">
           <DatePicker
             id="transaction-date"

@@ -223,24 +223,26 @@ export function SettingsPage() {
             hint="Stored locally for upcoming localization polish."
             id="language"
             label="Language"
-            onChange={(event) => updatePreference('language', event.target.value)}
+            onChange={(value) => updatePreference('language', value)}
+            options={[
+              { label: 'English', value: 'en' },
+              { label: 'Russian', value: 'ru' },
+              { label: 'Ukrainian', value: 'uk' },
+            ]}
             value={language}
-          >
-            <option value="en">English</option>
-            <option value="ru">Russian</option>
-            <option value="uk">Ukrainian</option>
-          </Select>
+          />
           <Select
             hint="Theme wiring is prepared for the next UI polish pass."
             id="theme"
             label="Theme"
-            onChange={(event) => updatePreference('theme', event.target.value)}
+            onChange={(value) => updatePreference('theme', value)}
+            options={[
+              { label: 'System', value: 'system' },
+              { label: 'Light', value: 'light' },
+              { label: 'Dark', value: 'dark' },
+            ]}
             value={theme}
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </Select>
+          />
         </div>
       </Card>
       <Card>

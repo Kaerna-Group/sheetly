@@ -15,6 +15,7 @@ import { Card } from '@shared/ui/card';
 import { DatePicker } from '@shared/ui/date-picker';
 import { EmptyState } from '@shared/ui/empty-state';
 import { Input } from '@shared/ui/input';
+import { Select } from '@shared/ui/select';
 import { Skeleton } from '@shared/ui/skeleton';
 
 type TransactionsHistoryProps = {
@@ -117,62 +118,6 @@ function TransactionsHistorySkeleton() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-type FilterOption = {
-  label: string;
-  value: string;
-};
-
-type FilterSelectProps = {
-  id: string;
-  label: string;
-  onChange: (value: string) => void;
-  options: FilterOption[];
-  value: string;
-};
-
-function FilterSelect({ id, label, onChange, options, value }: FilterSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find((option) => option.value === value) ?? options[0];
-  const wrapperRef = useOutsideClose(isOpen, () => setIsOpen(false));
-
-  return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={wrapperRef}>
-      <span id={`${id}-label`}>{label}</span>
-      <button
-        aria-expanded={isOpen}
-        aria-labelledby={`${id}-label`}
-        className="flex h-10 items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-900 shadow-sm outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100"
-        onClick={() => setIsOpen((current) => !current)}
-        type="button"
-      >
-        <span className="truncate">{selectedOption.label}</span>
-        <span className="text-xs text-zinc-400">⌄</span>
-      </button>
-      {isOpen ? (
-        <div className="absolute top-full z-20 mt-2 max-h-64 w-full min-w-44 overflow-auto rounded-md border border-zinc-200 bg-white p-1 shadow-lg">
-          {options.map((option) => (
-            <button
-              className={
-                option.value === value
-                  ? 'flex w-full rounded px-3 py-2 text-left text-sm font-medium text-brand'
-                  : 'flex w-full rounded px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50'
-              }
-              key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              type="button"
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -365,7 +310,7 @@ export function TransactionsHistory({
             placeholder="Comment, method, category"
             value={filters.query}
           />
-          <FilterSelect
+          <Select
             id="transactions-kind"
             label="Type"
             onChange={(kind) => updateFilters({ kind: kind as TransactionFilters['kind'] })}
@@ -376,7 +321,7 @@ export function TransactionsHistory({
             ]}
             value={filters.kind}
           />
-          <FilterSelect
+          <Select
             id="transactions-category"
             label="Category"
             onChange={(category) => updateFilters({ category })}
@@ -432,7 +377,7 @@ export function TransactionsHistory({
               placeholder="1000"
               value={filters.amountTo}
             />
-            <FilterSelect
+            <Select
               id="transactions-currency"
               label="Currency"
               onChange={(currency) => updateFilters({ currency })}
@@ -443,7 +388,7 @@ export function TransactionsHistory({
               value={filters.currency}
             />
             {containersEnabled ? (
-              <FilterSelect
+              <Select
                 id="transactions-container"
                 label="Container"
                 onChange={(container) => updateFilters({ container })}
@@ -454,7 +399,7 @@ export function TransactionsHistory({
                 value={filters.container}
               />
             ) : null}
-            <FilterSelect
+            <Select
               id="transactions-sync-status"
               label="Sync status"
               onChange={(syncStatus) =>

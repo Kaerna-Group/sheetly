@@ -50,14 +50,12 @@ export function CurrencySelect({
       hint={warning ?? (isLoading ? 'Loading currencies...' : undefined)}
       id={id}
       label={label}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={onChange}
+      options={options.map((currency) => ({
+        label: formatCurrencyLabel(currency),
+        value: currency.code,
+      }))}
       value={value}
-    >
-      {options.map((currency) => (
-        <option key={currency.code} value={currency.code}>
-          {formatCurrencyLabel(currency)}
-        </option>
-      ))}
-    </Select>
+    />
   );
 }
