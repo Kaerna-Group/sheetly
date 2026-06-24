@@ -82,7 +82,7 @@ export function Combobox<TItem extends ComboboxItem>({
   }
 
   return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={rootRef}>
+    <div className="relative grid gap-2 text-sm font-medium text-text-muted" ref={rootRef}>
       <label htmlFor={generatedId}>{label}</label>
       <input
         aria-activedescendant={
@@ -94,8 +94,8 @@ export function Combobox<TItem extends ComboboxItem>({
         aria-expanded={isOpen}
         aria-invalid={Boolean(error)}
         className={cn(
-          'h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-brand focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500',
-          error && 'border-danger focus:border-danger focus:ring-red-100',
+          'h-10 rounded-md border border-border bg-surface px-3 text-sm text-text outline-none transition placeholder:text-text-soft focus:border-brand focus:ring-2 focus:ring-brand-ring disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-text-soft',
+          error && 'border-danger focus:border-danger focus:ring-danger-soft',
         )}
         disabled={disabled}
         id={generatedId}
@@ -134,7 +134,7 @@ export function Combobox<TItem extends ComboboxItem>({
       />
       {description ? (
         <span
-          className={cn('text-xs font-normal text-zinc-500', error && 'text-danger')}
+          className={cn('text-xs font-normal text-text-soft', error && 'text-danger')}
           id={descriptionId}
         >
           {description}
@@ -142,7 +142,7 @@ export function Combobox<TItem extends ComboboxItem>({
       ) : null}
       {isOpen ? (
         <div
-          className="absolute top-full z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border border-zinc-200 bg-white p-1 shadow-lg"
+          className="absolute top-full z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-surface p-1 shadow-lg"
           id={listboxId}
           role="listbox"
         >
@@ -150,8 +150,8 @@ export function Combobox<TItem extends ComboboxItem>({
             options.map((option, index) => (
               <button
                 className={cn(
-                  'flex w-full items-center rounded px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100',
-                  index === activeIndex && 'bg-zinc-100',
+                  'flex w-full items-center rounded px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-hover',
+                  index === activeIndex && 'bg-surface-hover',
                   option.kind === 'create' && 'font-medium text-brand',
                 )}
                 id={`${generatedId}-option-${index}`}
@@ -168,7 +168,7 @@ export function Combobox<TItem extends ComboboxItem>({
               </button>
             ))
           ) : (
-            <div className="px-3 py-2 text-sm text-zinc-500">{emptyLabel}</div>
+            <div className="px-3 py-2 text-sm text-text-soft">{emptyLabel}</div>
           )}
         </div>
       ) : null}

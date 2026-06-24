@@ -267,7 +267,7 @@ export function CreateTransactionModal({
         <div className="-mt-2 flex flex-wrap gap-2">
           {amountPresets.map((amount) => (
             <button
-              className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition hover:border-brand hover:text-brand"
+              className="rounded-full border border-border px-3 py-1 text-sm font-medium text-text-muted transition hover:border-brand hover:text-brand"
               key={amount}
               onClick={() => setValues({ ...values, amount })}
               type="button"

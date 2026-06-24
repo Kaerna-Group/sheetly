@@ -56,6 +56,7 @@ export function SettingsPage() {
 
     if (key === 'theme') {
       setTheme(value);
+      window.dispatchEvent(new Event('sheetly:theme-change'));
     }
   }
 
@@ -143,12 +144,12 @@ export function SettingsPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-zinc-950">Spreadsheet connection</h2>
+              <h2 className="text-lg font-semibold text-text">Spreadsheet connection</h2>
               <Badge variant={spreadsheetId ? 'success' : 'warning'}>
                 {spreadsheetId ? 'Connected' : 'Not connected'}
               </Badge>
             </div>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-text-muted">
               {spreadsheetId
                 ? `Current spreadsheet id: ${spreadsheetId}`
                 : 'No spreadsheet is connected yet.'}
@@ -162,8 +163,8 @@ export function SettingsPage() {
       <Card>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Google authorization</h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <h2 className="text-lg font-semibold text-text">Google authorization</h2>
+            <p className="mt-1 text-sm text-text-muted">
               {googleAuth.isConfigured
                 ? 'Google OAuth client id is configured. Access tokens are kept in memory only.'
                 : 'Set VITE_GOOGLE_CLIENT_ID before using Google authorization.'}
@@ -182,18 +183,18 @@ export function SettingsPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-zinc-950">Containers</h2>
+              <h2 className="text-lg font-semibold text-text">Containers</h2>
               <Badge variant={containersEnabled ? 'success' : 'neutral'}>
                 {containersEnabled ? 'Enabled' : 'Disabled'}
               </Badge>
             </div>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-text-muted">
               Containers are separate money stores used by transactions. When enabled, every new
               transaction requires one.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm font-medium text-zinc-700">
+            <label className="flex items-center gap-2 text-sm font-medium text-text-muted">
               <input
                 checked={containersEnabled}
                 className="h-4 w-4 accent-brand"
@@ -209,7 +210,7 @@ export function SettingsPage() {
         </div>
       </Card>
       <Card>
-        <h2 className="text-lg font-semibold text-zinc-950">Preferences</h2>
+        <h2 className="text-lg font-semibold text-text">Preferences</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <Input
             hint="Used as the fallback currency in forms."
@@ -232,7 +233,7 @@ export function SettingsPage() {
             value={language}
           />
           <Select
-            hint="Theme wiring is prepared for the next UI polish pass."
+            hint="Applied immediately. Persisted to your browser."
             id="theme"
             label="Theme"
             onChange={(value) => updatePreference('theme', value)}
@@ -248,8 +249,8 @@ export function SettingsPage() {
       <Card>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Local data</h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <h2 className="text-lg font-semibold text-text">Local data</h2>
+            <p className="mt-1 text-sm text-text-muted">
               Export or import local Sheetly preferences, and reset only this browser cache when
               diagnostics look stale.
             </p>
@@ -277,8 +278,8 @@ export function SettingsPage() {
       <Card>
         <div className="flex flex-col gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-950">Diagnostics</h2>
-            <div className="mt-3 grid gap-2 text-sm text-zinc-600">
+            <h2 className="text-lg font-semibold text-text">Diagnostics</h2>
+            <div className="mt-3 grid gap-2 text-sm text-text-muted">
               <p>Spreadsheet: {spreadsheetId ?? 'not connected'}</p>
               <p>Google: {googleAuth.status}</p>
               <p>Network: {syncStatus.isOnline ? 'online' : 'offline'}</p>
@@ -291,11 +292,11 @@ export function SettingsPage() {
                 <p className="text-danger">Last sync error: {syncStatus.lastError}</p>
               ) : null}
             </div>
-            <div className="mt-5 rounded-md border border-zinc-200">
-              <div className="flex flex-col gap-3 border-b border-zinc-200 px-3 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="mt-5 rounded-md border border-border">
+              <div className="flex flex-col gap-3 border-b border-border px-3 py-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-950">Queue inspector</h3>
-                  <p className="text-sm text-zinc-500">
+                  <h3 className="text-sm font-semibold text-text">Queue inspector</h3>
+                  <p className="text-sm text-text-soft">
                     Pending and failed local changes waiting for Google Sheets sync.
                   </p>
                 </div>
@@ -322,15 +323,15 @@ export function SettingsPage() {
                   </Button>
                 </div>
               </div>
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-border">
                 {syncStatus.queueItems.length ? (
                   syncStatus.queueItems.map((item) => (
-                    <div className="grid gap-1 px-3 py-3 text-sm text-zinc-600" key={item.id}>
+                    <div className="grid gap-1 px-3 py-3 text-sm text-text-muted" key={item.id}>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant={item.lastError ? 'danger' : 'warning'}>
                           {item.operation}
                         </Badge>
-                        <span className="font-medium text-zinc-950">
+                        <span className="font-medium text-text">
                           {item.transaction?.categoryName ?? item.transactionId}
                         </span>
                         {item.transaction?.comment ? <span>{item.transaction.comment}</span> : null}
@@ -344,7 +345,7 @@ export function SettingsPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="px-3 py-4 text-sm text-zinc-500">Queue is empty.</div>
+                  <div className="px-3 py-4 text-sm text-text-soft">Queue is empty.</div>
                 )}
               </div>
             </div>

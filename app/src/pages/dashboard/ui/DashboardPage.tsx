@@ -33,14 +33,14 @@ type SummaryCardProps = {
 function SummaryCard({ label, getValue, summaries }: SummaryCardProps) {
   return (
     <Card>
-      <p className="text-sm text-zinc-500">{label}</p>
+      <p className="text-sm text-text-soft">{label}</p>
       {summaries.length === 0 ? (
-        <p className="mt-2 text-xl font-semibold text-zinc-500 md:text-2xl">—</p>
+        <p className="mt-2 text-xl font-semibold text-text-soft md:text-2xl">—</p>
       ) : (
         <ul className="mt-2 space-y-1">
           {summaries.map((entry) => (
             <li
-              className="break-words text-xl font-semibold text-zinc-950 md:text-2xl"
+              className="break-words text-xl font-semibold text-text md:text-2xl"
               key={entry.currency}
             >
               {formatMoney(getValue(entry), entry.currency)}

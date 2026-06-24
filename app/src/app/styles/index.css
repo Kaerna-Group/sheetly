@@ -1,14 +1,84 @@
 @import 'tailwindcss';
 
 @theme {
+  /* Surface */
+  --color-app-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-strong: #18181b;
+
+  /* Border */
+  --color-border: #e4e4e7;
+  --color-border-strong: #a1a1aa;
+
+  /* Text */
+  --color-text: #18181b;
+  --color-text-muted: #52525b;
+  --color-text-soft: #a1a1aa;
+  --color-text-inverted: #ffffff;
+
+  /* Brand */
   --color-brand: #6366f1;
-  --color-success: #22c55e;
-  --color-danger: #ef4444;
+  --color-brand-hover: #4f46e5;
+  --color-brand-soft: #eef2ff;
+  --color-brand-ring: #c7d2fe;
+
+  /* Semantic states */
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-danger-ring: #fecaca;
+
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+
+  --color-info: #6366f1;
+  --color-info-soft: #eef2ff;
+}
+
+/* Dark theme overrides */
+[data-theme='dark'] {
+  --color-app-bg: #0a0f1e;
+  --color-surface: #111827;
+  --color-surface-muted: #1f2937;
+  --color-surface-hover: #2d3748;
+  --color-surface-strong: #64748b;
+
+  --color-border: #1e293b;
+  --color-border-strong: #334155;
+
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-text-soft: #64748b;
+  --color-text-inverted: #ffffff;
+
+  --color-brand: #818cf8;
+  --color-brand-hover: #6366f1;
+  --color-brand-soft: #1e1b4b;
+  --color-brand-ring: #3730a3;
+
+  --color-danger: #f87171;
+  --color-danger-hover: #ef4444;
+  --color-danger-soft: #450a0a;
+  --color-danger-ring: #7f1d1d;
+
+  --color-success: #4ade80;
+  --color-success-soft: #052e16;
+
+  --color-warning: #fbbf24;
+  --color-warning-soft: #451a03;
+
+  --color-info: #818cf8;
+  --color-info-soft: #1e1b4b;
 }
 
 :root {
-  color: #18181b;
-  background: #f8fafc;
+  color: var(--color-text);
+  background-color: var(--color-app-bg);
   font-family:
     Inter,
     ui-sans-serif,

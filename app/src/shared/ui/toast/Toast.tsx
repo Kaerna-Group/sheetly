@@ -9,9 +9,9 @@ type ToastProps = {
 };
 
 const variantClasses: Record<ToastVariant, string> = {
-  error: 'border-red-200 bg-red-50 text-red-900',
-  info: 'border-indigo-200 bg-indigo-50 text-indigo-950',
-  success: 'border-green-200 bg-green-50 text-green-900',
+  error: 'border-danger/20 bg-danger-soft text-danger',
+  info: 'border-info/20 bg-info-soft text-info',
+  success: 'border-success/20 bg-success-soft text-success',
 };
 
 export function Toast({ message, title, variant = 'info' }: ToastProps) {

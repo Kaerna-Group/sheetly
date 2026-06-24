@@ -98,12 +98,12 @@ function hasActiveFilters(filters: TransactionFilters) {
 function TransactionsHistorySkeleton() {
   return (
     <div aria-label="Loading transactions" role="status">
-      <div className="hidden grid-cols-[120px_96px_1fr_140px_160px_1fr] gap-3 border-b border-zinc-200 px-5 py-3 md:grid">
+      <div className="hidden grid-cols-[120px_96px_1fr_140px_160px_1fr] gap-3 border-b border-border px-5 py-3 md:grid">
         {Array.from({ length: 6 }, (_, index) => (
           <Skeleton className="h-3" key={index} />
         ))}
       </div>
-      <div className="divide-y divide-zinc-100">
+      <div className="divide-y divide-border">
         {Array.from({ length: 6 }, (_, index) => (
           <div
             className="grid gap-3 px-5 py-4 md:grid-cols-[120px_96px_1fr_140px_160px_1fr] md:items-center"
@@ -135,16 +135,16 @@ function RowActions({ onDelete, onEdit }: RowActionsProps) {
     <div className="relative flex justify-start md:justify-end" ref={wrapperRef}>
       <button
         aria-label="Transaction actions"
-        className="grid size-8 place-items-center rounded-md border border-zinc-200 text-lg leading-none text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+        className="grid size-8 place-items-center rounded-md border border-border text-lg leading-none text-text-soft hover:bg-surface-hover hover:text-text"
         onClick={() => setIsOpen((current) => !current)}
         type="button"
       >
         ...
       </button>
       {isOpen ? (
-        <div className="absolute right-0 top-full z-20 mt-2 w-32 rounded-md border border-zinc-200 bg-white p-1 shadow-lg">
+        <div className="absolute right-0 top-full z-20 mt-2 w-32 rounded-md border border-border bg-surface p-1 shadow-lg">
           <button
-            className="w-full rounded px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+            className="w-full rounded px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-hover"
             onClick={() => {
               onEdit();
               setIsOpen(false);
@@ -154,7 +154,7 @@ function RowActions({ onDelete, onEdit }: RowActionsProps) {
             Edit
           </button>
           <button
-            className="w-full rounded px-3 py-2 text-left text-sm text-danger hover:bg-red-50"
+            className="w-full rounded px-3 py-2 text-left text-sm text-danger hover:bg-danger-soft"
             onClick={() => {
               void onDelete();
               setIsOpen(false);
@@ -171,11 +171,11 @@ function RowActions({ onDelete, onEdit }: RowActionsProps) {
 
 function CommentCell({ value }: { value?: string }) {
   if (!value) {
-    return <div className="text-zinc-600">-</div>;
+    return <div className="text-text-muted">-</div>;
   }
 
   return (
-    <div className="max-w-56 truncate text-zinc-600" title={value}>
+    <div className="max-w-56 truncate text-text-muted" title={value}>
       {value}
     </div>
   );
@@ -184,7 +184,7 @@ function CommentCell({ value }: { value?: string }) {
 function TransactionField({ children, label }: { children: ReactNode; label: string }) {
   return (
     <div className="flex items-start justify-between gap-3 md:block">
-      <span className="shrink-0 text-xs font-semibold uppercase text-zinc-400 md:hidden">
+      <span className="shrink-0 text-xs font-semibold uppercase text-text-soft md:hidden">
         {label}
       </span>
       <div className="min-w-0 text-right md:text-left">{children}</div>
@@ -242,7 +242,7 @@ export function TransactionsHistory({
 
   if (error && !transactions.length) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="border-danger/20 bg-danger-soft">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-danger">{error}</p>
           <Button onClick={() => void onRefresh()} variant="secondary">
@@ -268,15 +268,15 @@ export function TransactionsHistory({
 
   return (
     <Card className="mb-16 p-0">
-      <div className="flex flex-col gap-4 border-b border-zinc-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 border-b border-border px-5 py-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-zinc-950">Transactions history</h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h2 className="text-base font-semibold text-text">Transactions history</h2>
+          <p className="mt-1 text-sm text-text-soft">
             {`${filteredTransactions.length} of ${transactions.length} transactions`}
             {isLoading ? <span className="ml-2 text-brand">Refreshing...</span> : null}
           </p>
           {error ? <p className="mt-1 text-sm text-danger">{error}</p> : null}
-          {syncWarning ? <p className="mt-1 text-sm text-amber-700">{syncWarning}</p> : null}
+          {syncWarning ? <p className="mt-1 text-sm text-warning">{syncWarning}</p> : null}
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {hasPendingSync ? (
@@ -300,7 +300,7 @@ export function TransactionsHistory({
           </Button>
         </div>
       </div>
-      <div className="border-b border-zinc-200 bg-zinc-50/60 px-5 py-4">
+      <div className="border-b border-border bg-surface-muted/60 px-5 py-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.5fr)_minmax(120px,0.8fr)_minmax(160px,1fr)_auto_auto] lg:items-end">
           <Input
             className="truncate"
@@ -350,7 +350,7 @@ export function TransactionsHistory({
           </Button>
         </div>
         {isAdvancedFiltersOpen ? (
-          <div className="mt-4 grid gap-4 rounded-md border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
+          <div className="mt-4 grid gap-4 rounded-md border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
             <DatePicker
               id="transactions-date-from"
               label="Date from"
@@ -415,7 +415,7 @@ export function TransactionsHistory({
               ]}
               value={filters.syncStatus}
             />
-            <label className="flex items-end gap-2 pb-2 text-sm font-medium text-zinc-700">
+            <label className="flex items-end gap-2 pb-2 text-sm font-medium text-text-muted">
               <input
                 checked={filters.showDeleted}
                 className="mb-1 h-4 w-4 accent-brand"
@@ -439,7 +439,7 @@ export function TransactionsHistory({
         />
       ) : (
         <div>
-          <div className="hidden grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] gap-3 border-b border-zinc-200 px-5 py-3 text-xs font-semibold uppercase text-zinc-500 md:grid">
+          <div className="hidden grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] gap-3 border-b border-border px-5 py-3 text-xs font-semibold uppercase text-text-soft md:grid">
             <span>Date</span>
             <span>Type</span>
             <span>Category</span>
@@ -450,24 +450,24 @@ export function TransactionsHistory({
             <span>Status</span>
             <span className="text-right">Actions</span>
           </div>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-border">
             {filteredTransactions.map((transaction) => (
               <div
                 className={
                   transaction.deletedAt
-                    ? 'grid gap-3 bg-zinc-50 px-4 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
+                    ? 'grid gap-3 bg-surface-muted px-4 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
                     : 'grid gap-3 px-4 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
                 }
                 key={transaction.id}
               >
                 <TransactionField label="Date">
-                  <div className="text-zinc-500">{transaction.date}</div>
+                  <div className="text-text-soft">{transaction.date}</div>
                 </TransactionField>
                 <TransactionField label="Type">
-                  <div className="font-medium text-zinc-700">{formatKind(transaction.kind)}</div>
+                  <div className="font-medium text-text-muted">{formatKind(transaction.kind)}</div>
                 </TransactionField>
                 <TransactionField label="Category">
-                  <div className="font-medium text-zinc-950">{transaction.categoryName}</div>
+                  <div className="font-medium text-text">{transaction.categoryName}</div>
                 </TransactionField>
                 <TransactionField label="Amount">
                   <div
@@ -481,13 +481,13 @@ export function TransactionsHistory({
                   </div>
                 </TransactionField>
                 <TransactionField label="Payment">
-                  <div className="text-zinc-600">{transaction.paymentMethod || '-'}</div>
+                  <div className="text-text-muted">{transaction.paymentMethod || '-'}</div>
                 </TransactionField>
                 <TransactionField label="Comment">
                   <CommentCell value={transaction.comment} />
                 </TransactionField>
                 <TransactionField label="Container">
-                  <div className="text-zinc-600">{transaction.containerName || '-'}</div>
+                  <div className="text-text-muted">{transaction.containerName || '-'}</div>
                 </TransactionField>
                 <TransactionField label="Status">
                   <div className="flex flex-wrap gap-1">

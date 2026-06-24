@@ -59,7 +59,7 @@ export function Select({
   }, [isOpen]);
 
   return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={containerRef}>
+    <div className="relative grid gap-2 text-sm font-medium text-text-muted" ref={containerRef}>
       {label ? <span id={`${selectId}-label`}>{label}</span> : null}
 
       <button
@@ -68,9 +68,9 @@ export function Select({
         aria-invalid={Boolean(error)}
         aria-labelledby={label ? `${selectId}-label` : undefined}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-900 outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100',
-          disabled && 'cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200',
-          error && 'border-danger focus:border-danger focus:ring-red-100',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-left text-sm text-text outline-none transition hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand-ring',
+          disabled && 'cursor-not-allowed bg-surface-muted text-text-soft hover:border-border',
+          error && 'border-danger focus:border-danger focus:ring-danger-soft',
         )}
         disabled={disabled}
         onClick={() => setIsOpen((o) => !o)}
@@ -79,21 +79,21 @@ export function Select({
         <span className="truncate">{selectedOption?.label ?? 'Select...'}</span>
         <ChevronDownIcon
           className={cn(
-            'size-4 shrink-0 text-zinc-400 transition-transform duration-150',
+            'size-4 shrink-0 text-text-soft transition-transform duration-150',
             isOpen && 'rotate-180',
           )}
         />
       </button>
 
       {description ? (
-        <span className={cn('text-xs font-normal text-zinc-500', error && 'text-danger')}>
+        <span className={cn('text-xs font-normal text-text-soft', error && 'text-danger')}>
           {description}
         </span>
       ) : null}
 
       {isOpen && !disabled ? (
         <div
-          className="absolute top-full z-50 mt-1.5 max-h-64 w-full min-w-max overflow-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl"
+          className="absolute top-full z-50 mt-1.5 max-h-64 w-full min-w-max overflow-auto rounded-xl border border-border bg-surface p-1 shadow-xl"
           role="listbox"
         >
           {options.map((option) => {
@@ -104,8 +104,8 @@ export function Select({
                 className={cn(
                   'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition',
                   isSelected
-                    ? 'bg-indigo-50 font-medium text-brand'
-                    : 'text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900',
+                    ? 'bg-brand-soft font-medium text-brand'
+                    : 'text-text-muted hover:bg-surface-hover hover:text-text',
                 )}
                 key={option.value}
                 onClick={() => {

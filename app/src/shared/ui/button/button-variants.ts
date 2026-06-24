@@ -4,10 +4,12 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-brand text-white hover:bg-indigo-500 focus-visible:outline-brand',
-  secondary: 'bg-zinc-900 text-white hover:bg-zinc-700 focus-visible:outline-zinc-900',
-  ghost: 'bg-transparent text-zinc-700 hover:bg-zinc-100 focus-visible:outline-zinc-400',
-  danger: 'bg-danger text-white hover:bg-red-500 focus-visible:outline-danger',
+  primary: 'bg-brand text-text-inverted hover:bg-brand-hover focus-visible:outline-brand',
+  secondary:
+    'bg-surface-strong text-text-inverted hover:bg-surface-strong/80 focus-visible:outline-surface-strong',
+  ghost:
+    'bg-transparent text-text-muted hover:bg-surface-hover focus-visible:outline-border-strong',
+  danger: 'bg-danger text-text-inverted hover:bg-danger-hover focus-visible:outline-danger',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
