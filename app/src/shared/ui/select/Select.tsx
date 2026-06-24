@@ -12,6 +12,7 @@ type SelectProps = {
   error?: string;
   hint?: string;
   id?: string;
+  isLoading?: boolean;
   label?: string;
   onChange: (value: string) => void;
   options: SelectOption[];
@@ -23,6 +24,7 @@ export function Select({
   error,
   hint,
   id,
+  isLoading,
   label,
   onChange,
   options,
@@ -77,12 +79,16 @@ export function Select({
         type="button"
       >
         <span className="truncate">{selectedOption?.label ?? 'Select...'}</span>
-        <ChevronDownIcon
-          className={cn(
-            'size-4 shrink-0 text-text-soft transition-transform duration-150',
-            isOpen && 'rotate-180',
-          )}
-        />
+        {isLoading ? (
+          <SpinnerIcon className="size-4 shrink-0 animate-spin text-text-soft" />
+        ) : (
+          <ChevronDownIcon
+            className={cn(
+              'size-4 shrink-0 text-text-soft transition-transform duration-150',
+              isOpen && 'rotate-180',
+            )}
+          />
+        )}
       </button>
 
       {description ? (
@@ -154,6 +160,21 @@ function CheckIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
     >
       <path d="m4.5 12.75 6 6 9-13.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SpinnerIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 2C6.477 2 2 6.477 2 12" strokeLinecap="round" />
     </svg>
   );
 }

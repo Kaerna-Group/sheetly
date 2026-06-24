@@ -47,8 +47,9 @@ export function CurrencySelect({
 
   return (
     <Select
-      hint={warning ?? (isLoading ? 'Loading currencies...' : undefined)}
+      hint={warning}
       id={id}
+      isLoading={isLoading}
       label={label}
       onChange={onChange}
       options={options.map((currency) => ({
