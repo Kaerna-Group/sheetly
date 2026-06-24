@@ -169,6 +169,43 @@ function ThemeCard({ description, isActive, label, onClick, variant }: ThemeCard
   );
 }
 
+function ThemePreview() {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border bg-app-bg">
+      {/* Mock nav header */}
+      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2.5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand">Sheetly</p>
+          <p className="text-xs text-text-soft">Personal finance</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-success-soft px-2 py-0.5 text-xs font-medium text-success">
+            Synced
+          </span>
+        </div>
+      </div>
+      {/* Mock page content */}
+      <div className="p-4">
+        <p className="mb-3 text-xs font-semibold text-text-soft">Dashboard</p>
+        {/* Mock balance card */}
+        <div className="mb-3 rounded-md border border-border bg-surface p-3">
+          <p className="text-xs text-text-soft">Balance</p>
+          <p className="mt-0.5 text-base font-semibold text-text">12,400 UAH</p>
+        </div>
+        {/* Mock action buttons */}
+        <div className="flex gap-2">
+          <div className="flex h-7 items-center rounded-md bg-brand px-3 text-xs font-medium text-text-inverted">
+            Add transaction
+          </div>
+          <div className="flex h-7 items-center rounded-md bg-surface-strong px-3 text-xs font-medium text-text-inverted">
+            Export
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- page ----------
 
 export function SettingsPage() {
@@ -298,6 +335,10 @@ export function SettingsPage() {
             onClick={() => setTheme('system')}
             variant="system"
           />
+        </div>
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-semibold uppercase text-text-soft">Preview</p>
+          <ThemePreview />
         </div>
       </Card>
 
