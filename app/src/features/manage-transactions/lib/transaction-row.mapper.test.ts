@@ -238,6 +238,40 @@ describe('transaction row mapper', () => {
     expect(rows.map(mapRowToTransaction).filter(Boolean)).toHaveLength(4);
   });
 
+  it('reads non-UAH currencies from Ledger rows', () => {
+    expect(
+      mapRowToTransaction([
+        'tx-usd',
+        '2026-05-19',
+        'income',
+        'Freelance',
+        '500',
+        '500',
+        'USD',
+        '',
+        '',
+        '2026-05-19T10:00:00.000Z',
+        'google-sheets',
+        'synced',
+      ]),
+    ).toMatchObject({ currency: 'USD', amount: 500 });
+
+    expect(
+      mapRowToTransaction([
+        'tx-eur',
+        '2026-05-19',
+        'expense',
+        'Food',
+        '30',
+        '-30',
+        'EUR',
+        '',
+        '',
+        '2026-05-19T10:00:00.000Z',
+      ]),
+    ).toMatchObject({ currency: 'EUR', amount: 30, signedAmount: -30 });
+  });
+
   it('skips invalid rows', () => {
     expect(mapRowToTransaction(['', '2026-05-19'])).toBeNull();
     expect(

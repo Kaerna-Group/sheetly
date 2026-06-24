@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Transaction } from '@entities/transaction';
 import { useGoogleAuth } from '@features/google-auth';
@@ -6,7 +6,7 @@ import { localStorageService } from '@shared/lib/storage/local-storage.service';
 
 import { createGoogleSheetsDataSource } from '../lib/google-sheets-data-source';
 import { createLocalQueueDataSource } from '../lib/local-queue-data-source';
-import { offlineTransactionsStorage } from '../lib/offline-transactions.storage';
+import { createOfflineTransactionsStorage } from '../lib/offline-transactions.storage';
 
 function sortTransactions(transactions: Transaction[]) {
   return [...transactions].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
@@ -27,10 +27,13 @@ function markTransactionAsFailed(transaction: Transaction): Transaction {
   };
 }
 
-async function clearQueuedTransaction(transactionId: string) {
+async function clearQueuedTransaction(
+  storage: ReturnType<typeof createOfflineTransactionsStorage>,
+  transactionId: string,
+) {
   await Promise.all(
     ['create', 'update', 'delete'].map((operation) =>
-      offlineTransactionsStorage.removeQueueItem(`${operation}-${transactionId}`),
+      storage.removeQueueItem(`${operation}-${transactionId}`),
     ),
   );
 }
@@ -45,6 +48,37 @@ export function useTransactions() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncWarning, setSyncWarning] = useState<string | null>(null);
 
+  const storage = useMemo(
+    () => createOfflineTransactionsStorage(spreadsheetId ?? '__unscoped__'),
+    [spreadsheetId],
+  );
+
+  const prevSpreadsheetId = useRef(spreadsheetId);
+
+  useEffect(() => {
+    const prevId = prevSpreadsheetId.current;
+
+    if (prevId !== spreadsheetId) {
+      prevSpreadsheetId.current = spreadsheetId;
+
+      setTransactions([]);
+      setError(null);
+      setSyncWarning(null);
+
+      if (prevId) {
+        const oldStorage = createOfflineTransactionsStorage(prevId);
+
+        void oldStorage.getQueueItems().then((items) => {
+          if (items.length > 0) {
+            setSyncWarning(
+              `${items.length} unsynced change${items.length !== 1 ? 's' : ''} remain from the previous spreadsheet.`,
+            );
+          }
+        });
+      }
+    }
+  }, [spreadsheetId]);
+
   const remoteDataSource = useCallback(() => {
     if (!googleAuth.accessToken || !spreadsheetId) {
       return null;
@@ -57,12 +91,13 @@ export function useTransactions() {
   }, [googleAuth.accessToken, spreadsheetId]);
 
   const localDataSource = useCallback(
-    () => createLocalQueueDataSource(remoteDataSource() ?? undefined),
-    [remoteDataSource],
+    () =>
+      createLocalQueueDataSource(remoteDataSource() ?? undefined, spreadsheetId ?? '__unscoped__'),
+    [remoteDataSource, spreadsheetId],
   );
 
   const loadTransactions = useCallback(async () => {
-    const cachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
+    const cachedTransactions = await storage.getCachedTransactions();
 
     if (cachedTransactions.length) {
       setTransactions(cachedTransactions);
@@ -76,7 +111,7 @@ export function useTransactions() {
     }
 
     const loadedTransactions = await dataSource.getTransactions();
-    const pendingTransactions = (await offlineTransactionsStorage.getCachedTransactions()).filter(
+    const pendingTransactions = (await storage.getCachedTransactions()).filter(
       (transaction) => transaction.syncStatus !== 'synced',
     );
     const mergedTransactions = [
@@ -89,11 +124,11 @@ export function useTransactions() {
       ),
     ];
 
-    await offlineTransactionsStorage.cacheTransactions(mergedTransactions);
+    await storage.cacheTransactions(mergedTransactions);
     setSyncWarning(null);
 
     return mergedTransactions;
-  }, [remoteDataSource]);
+  }, [remoteDataSource, storage]);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -104,7 +139,7 @@ export function useTransactions() {
 
       setTransactions(loadedTransactions);
     } catch (caughtError) {
-      const cachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
+      const cachedTransactions = await storage.getCachedTransactions();
 
       setTransactions(cachedTransactions);
       setError(caughtError instanceof Error ? caughtError.message : 'Could not load transactions.');
@@ -112,7 +147,7 @@ export function useTransactions() {
     } finally {
       setIsLoading(false);
     }
-  }, [loadTransactions]);
+  }, [loadTransactions, storage]);
 
   const syncCreatedTransaction = useCallback(
     async (transaction: Transaction) => {
@@ -133,8 +168,8 @@ export function useTransactions() {
         );
         const syncedTransaction = await dataSource.createTransaction(transaction);
 
-        await clearQueuedTransaction(transaction.id);
-        await offlineTransactionsStorage.upsertCachedTransaction(syncedTransaction);
+        await clearQueuedTransaction(storage, transaction.id);
+        await storage.upsertCachedTransaction(syncedTransaction);
         setTransactions((currentTransactions) =>
           upsertTransaction(currentTransactions, syncedTransaction),
         );
@@ -142,14 +177,14 @@ export function useTransactions() {
       } catch {
         const failedTransaction = markTransactionAsFailed(transaction);
 
-        await offlineTransactionsStorage.upsertCachedTransaction(failedTransaction);
+        await storage.upsertCachedTransaction(failedTransaction);
         setTransactions((currentTransactions) =>
           upsertTransaction(currentTransactions, failedTransaction),
         );
         setSyncWarning('Google is unavailable. Transaction was saved offline.');
       }
     },
-    [remoteDataSource],
+    [remoteDataSource, storage],
   );
 
   const syncUpdatedTransaction = useCallback(
@@ -171,8 +206,8 @@ export function useTransactions() {
         );
         const syncedTransaction = await dataSource.updateTransaction(transaction);
 
-        await clearQueuedTransaction(transaction.id);
-        await offlineTransactionsStorage.upsertCachedTransaction(syncedTransaction);
+        await clearQueuedTransaction(storage, transaction.id);
+        await storage.upsertCachedTransaction(syncedTransaction);
         setTransactions((currentTransactions) =>
           upsertTransaction(currentTransactions, syncedTransaction),
         );
@@ -180,14 +215,14 @@ export function useTransactions() {
       } catch {
         const failedTransaction = markTransactionAsFailed(transaction);
 
-        await offlineTransactionsStorage.upsertCachedTransaction(failedTransaction);
+        await storage.upsertCachedTransaction(failedTransaction);
         setTransactions((currentTransactions) =>
           upsertTransaction(currentTransactions, failedTransaction),
         );
         setSyncWarning('Google is unavailable. Update was saved offline.');
       }
     },
-    [remoteDataSource],
+    [remoteDataSource, storage],
   );
 
   const syncDeletedTransaction = useCallback(
@@ -211,7 +246,7 @@ export function useTransactions() {
         }
 
         await dataSource.softDeleteTransaction(transactionId);
-        await clearQueuedTransaction(transactionId);
+        await clearQueuedTransaction(storage, transactionId);
         if (deletedTransaction) {
           const syncedDeletedTransaction: Transaction = {
             ...deletedTransaction,
@@ -219,7 +254,7 @@ export function useTransactions() {
             syncStatus: 'synced',
           };
 
-          await offlineTransactionsStorage.upsertCachedTransaction(syncedDeletedTransaction);
+          await storage.upsertCachedTransaction(syncedDeletedTransaction);
           setTransactions((currentTransactions) =>
             upsertTransaction(currentTransactions, syncedDeletedTransaction),
           );
@@ -229,7 +264,7 @@ export function useTransactions() {
         if (deletedTransaction) {
           const failedTransaction = markTransactionAsFailed(deletedTransaction);
 
-          await offlineTransactionsStorage.upsertCachedTransaction(failedTransaction);
+          await storage.upsertCachedTransaction(failedTransaction);
           setTransactions((currentTransactions) =>
             upsertTransaction(currentTransactions, failedTransaction),
           );
@@ -237,14 +272,14 @@ export function useTransactions() {
         setSyncWarning('Google is unavailable. Delete was saved offline.');
       }
     },
-    [remoteDataSource],
+    [remoteDataSource, storage],
   );
 
   useEffect(() => {
     let isActive = true;
 
     async function loadInitialTransactions() {
-      const cachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
+      const cachedTransactions = await storage.getCachedTransactions();
 
       if (!isActive) {
         return;
@@ -265,7 +300,7 @@ export function useTransactions() {
         }
       } catch (caughtError) {
         if (isActive) {
-          const fallbackTransactions = await offlineTransactionsStorage.getCachedTransactions();
+          const fallbackTransactions = await storage.getCachedTransactions();
 
           setTransactions(fallbackTransactions);
           setError(
@@ -285,7 +320,7 @@ export function useTransactions() {
     return () => {
       isActive = false;
     };
-  }, [loadTransactions]);
+  }, [loadTransactions, storage]);
 
   useEffect(() => {
     function refreshSpreadsheetId() {
@@ -349,13 +384,13 @@ export function useTransactions() {
     setError(null);
 
     try {
-      const cachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
+      const cachedTransactions = await storage.getCachedTransactions();
       const deletedTransaction = cachedTransactions.find(
         (transaction) => transaction.id === transactionId,
       );
 
       await localDataSource().softDeleteTransaction(transactionId);
-      const nextCachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
+      const nextCachedTransactions = await storage.getCachedTransactions();
 
       setTransactions(nextCachedTransactions);
       void syncDeletedTransaction(
@@ -378,7 +413,7 @@ export function useTransactions() {
 
     try {
       const result = await localDataSource().syncPending();
-      const cachedTransactions = await offlineTransactionsStorage.getCachedTransactions();
+      const cachedTransactions = await storage.getCachedTransactions();
 
       setTransactions(cachedTransactions);
       setSyncWarning(
@@ -393,7 +428,7 @@ export function useTransactions() {
     } finally {
       setIsSyncing(false);
     }
-  }, [localDataSource]);
+  }, [localDataSource, storage]);
 
   useEffect(() => {
     if (!googleAuth.accessToken || !spreadsheetId) {
@@ -401,7 +436,7 @@ export function useTransactions() {
     }
 
     async function syncQueuedChanges() {
-      const queueItems = await offlineTransactionsStorage.getQueueItems();
+      const queueItems = await storage.getQueueItems();
 
       if (queueItems.length) {
         void retrySync();
@@ -409,7 +444,7 @@ export function useTransactions() {
     }
 
     void syncQueuedChanges();
-  }, [googleAuth.accessToken, retrySync, spreadsheetId]);
+  }, [googleAuth.accessToken, retrySync, spreadsheetId, storage]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

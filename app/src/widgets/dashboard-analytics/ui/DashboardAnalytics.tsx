@@ -6,6 +6,7 @@ import {
   type CategoryStats,
   type ChartId,
 } from '@features/analyze-transactions';
+import { getTransactionCurrencyOptions } from '@features/filter-transactions';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { EmptyState } from '@shared/ui/empty-state';
@@ -243,7 +244,7 @@ function ChartSlot({
 
   return (
     <Card
-      className={isWide ? 'min-h-[420px]' : 'min-h-[360px]'}
+      className={isWide ? 'min-h-[360px] md:min-h-[420px]' : 'min-h-[320px] md:min-h-[360px]'}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         const droppedChartId = event.dataTransfer.getData('text/plain');
@@ -273,7 +274,7 @@ function ChartSlot({
           </Button>
         </div>
       </div>
-      <div className={isWide ? 'h-80' : 'h-72'}>
+      <div className={isWide ? 'h-64 md:h-80' : 'h-56 md:h-72'}>
         <ResponsiveContainer height="100%" width="100%">
           {renderChart({ categoryStats, chartId, dailyExpenseStats, monthlyStats })}
         </ResponsiveContainer>
@@ -310,7 +311,40 @@ function ChartDragPreview({
 }
 
 export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
-  const { categoryStats, monthlyStats, source } = useAnalyticsStats(transactions);
+  const availableCurrencies = useMemo(
+    () => getTransactionCurrencyOptions(transactions),
+    [transactions],
+  );
+  const isMultiCurrency = availableCurrencies.length > 1;
+
+  const [activeCurrency, setActiveCurrency] = useState<string>(() => {
+    const stored = localStorageService.get('analyticsActiveCurrency');
+    return stored ?? availableCurrencies[0] ?? '';
+  });
+
+  const displayCurrency = useMemo(
+    () =>
+      availableCurrencies.includes(activeCurrency)
+        ? activeCurrency
+        : (availableCurrencies[0] ?? ''),
+    [availableCurrencies, activeCurrency],
+  );
+
+  function handleCurrencyChange(currency: string) {
+    setActiveCurrency(currency);
+    localStorageService.set('analyticsActiveCurrency', currency);
+  }
+
+  const filteredTransactions = useMemo(
+    () =>
+      isMultiCurrency ? transactions.filter((t) => t.currency === displayCurrency) : transactions,
+    [transactions, isMultiCurrency, displayCurrency],
+  );
+
+  const { categoryStats, monthlyStats, source } = useAnalyticsStats(
+    filteredTransactions,
+    isMultiCurrency,
+  );
   const [chartSlots, setChartSlots] = useState<ChartSlots>(() =>
     parseChartSlots(localStorageService.get('analyticsChartSlots')),
   );
@@ -319,7 +353,10 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
   );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<0 | 1>(0);
-  const dailyExpenseStats = useMemo(() => calculateDailyExpenseStats(transactions), [transactions]);
+  const dailyExpenseStats = useMemo(
+    () => calculateDailyExpenseStats(filteredTransactions),
+    [filteredTransactions],
+  );
 
   function updateChartSlot(slotIndex: 0 | 1, chartId: ChartId) {
     const nextSlots: ChartSlots =
@@ -366,9 +403,29 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
           <p className="text-sm font-medium text-zinc-500">
             {source === 'google-sheets' ? 'Google Sheets analytics' : 'Local analytics'}
           </p>
-          <Button onClick={() => setIsPickerOpen((current) => !current)} variant="secondary">
-            {isPickerOpen ? 'Hide charts' : 'Choose charts'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {isMultiCurrency ? (
+              <div className="flex gap-1">
+                {availableCurrencies.map((currency) => (
+                  <Button
+                    key={currency}
+                    onClick={() => handleCurrencyChange(currency)}
+                    size="sm"
+                    variant={currency === displayCurrency ? 'secondary' : 'ghost'}
+                  >
+                    {currency}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => setIsPickerOpen((current) => !current)}
+              variant="secondary"
+            >
+              {isPickerOpen ? 'Hide charts' : 'Choose charts'}
+            </Button>
+          </div>
         </div>
         {wideChartId ? (
           <ChartSlot
@@ -406,7 +463,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
         )}
       </div>
       {isPickerOpen ? (
-        <aside className="fixed inset-x-4 bottom-4 top-20 z-40 overflow-y-auto xl:inset-x-auto xl:right-4 xl:w-80">
+        <aside className="fixed inset-x-3 bottom-3 top-16 z-40 overflow-y-auto sm:inset-x-4 sm:bottom-4 sm:top-20 xl:inset-x-auto xl:right-4 xl:w-80">
           <Card className="min-h-full">
             <div className="mb-4">
               <div className="flex items-start justify-between gap-3">
@@ -453,7 +510,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
                     dailyExpenseStats={dailyExpenseStats}
                     monthlyStats={monthlyStats}
                   />
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-3 gap-2">
                     <Button onClick={() => updateChartSlot(0, chart.id)} size="sm" variant="ghost">
                       Slot 1
                     </Button>

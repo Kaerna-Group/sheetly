@@ -52,13 +52,13 @@ export const currencyHeaders = [
 
 export const summaryHeaders = ['metric', 'value'] as const;
 
-export const monthlyStatsHeaders = ['month', 'income', 'expense', 'balance'] as const;
+export const monthlyStatsHeaders = ['month', 'currency', 'income', 'expense', 'balance'] as const;
 
-export const categoryStatsHeaders = ['category', 'kind', 'total', 'count'] as const;
+export const categoryStatsHeaders = ['category', 'kind', 'currency', 'total', 'count'] as const;
 
 export const settingsHeaders = ['key', 'value'] as const;
 
-export const templateVersion = '3';
+export const templateVersion = '4';
 
 export const requiredSheetNames = [
   sheetNames.ledger,
@@ -84,13 +84,14 @@ export const sheetRanges = {
   ledger: `${sheetNames.ledger}!A:P`,
   ledgerData: `${sheetNames.ledger}!A2:P`,
   ledgerHeaders: `${sheetNames.ledger}!A1:P1`,
-  categoryStatsHeaders: `${sheetNames.categoryStats}!A1:D1`,
-  categoryStatsData: `${sheetNames.categoryStats}!A2:D`,
+  categoryStatsHeaders: `${sheetNames.categoryStats}!A1:E1`,
+  categoryStatsData: `${sheetNames.categoryStats}!A2:E`,
   categoryStatsFormula: `${sheetNames.categoryStats}!A2`,
-  monthlyStatsHeaders: `${sheetNames.monthlyStats}!A1:D1`,
-  monthlyStatsData: `${sheetNames.monthlyStats}!A2:D`,
+  monthlyStatsHeaders: `${sheetNames.monthlyStats}!A1:E1`,
+  monthlyStatsData: `${sheetNames.monthlyStats}!A2:E`,
   monthlyStatsFormula: `${sheetNames.monthlyStats}!A2`,
   summary: `${sheetNames.summary}!A:B`,
+  summaryByCurrencyFormula: `${sheetNames.summary}!A8`,
   settingsHeaders: `${sheetNames.settings}!A1:B1`,
   settingsTemplateVersion: `${sheetNames.settings}!A2:B2`,
 } as const;

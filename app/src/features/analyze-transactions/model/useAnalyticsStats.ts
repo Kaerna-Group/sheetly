@@ -7,7 +7,7 @@ import { localStorageService } from '@shared/lib/storage/local-storage.service';
 import { readAnalyticsStats } from '../lib/analytics-stats.service';
 import type { AnalyticsStats } from '../types/analytics-stat.types';
 
-export function useAnalyticsStats(transactions: Transaction[]) {
+export function useAnalyticsStats(transactions: Transaction[], forceLocal = false) {
   const googleAuth = useGoogleAuth();
   const [stats, setStats] = useState<AnalyticsStats>({
     categoryStats: [],
@@ -22,6 +22,7 @@ export function useAnalyticsStats(transactions: Transaction[]) {
     async function loadStats() {
       const nextStats = await readAnalyticsStats({
         accessToken: googleAuth.accessToken,
+        forceLocal,
         spreadsheetId,
         transactions,
       });
@@ -36,7 +37,7 @@ export function useAnalyticsStats(transactions: Transaction[]) {
     return () => {
       isActive = false;
     };
-  }, [googleAuth.accessToken, transactions]);
+  }, [googleAuth.accessToken, forceLocal, transactions]);
 
   return stats;
 }

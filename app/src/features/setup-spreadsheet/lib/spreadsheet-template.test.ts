@@ -72,7 +72,7 @@ describe('spreadsheet template helpers', () => {
         }),
         expect.objectContaining({
           range: 'Settings!A2:B2',
-          values: [['templateVersion', '3']],
+          values: [['templateVersion', '4']],
         }),
         expect.objectContaining({
           range: 'Summary!A:B',
@@ -82,20 +82,24 @@ describe('spreadsheet template helpers', () => {
           ]),
         }),
         expect.objectContaining({
-          range: 'MonthlyStats!A1:D1',
-          values: [['month', 'income', 'expense', 'balance']],
+          range: 'Summary!A8',
+          values: [[expect.stringContaining('QUERY(FILTER')]],
+        }),
+        expect.objectContaining({
+          range: 'MonthlyStats!A1:E1',
+          values: [['month', 'currency', 'income', 'expense', 'balance']],
         }),
         expect.objectContaining({
           range: 'MonthlyStats!A2',
           values: [[expect.stringContaining('QUERY(FILTER')]],
         }),
         expect.objectContaining({
-          range: 'CategoryStats!A1:D1',
-          values: [['category', 'kind', 'total', 'count']],
+          range: 'CategoryStats!A1:E1',
+          values: [['category', 'kind', 'currency', 'total', 'count']],
         }),
         expect.objectContaining({
           range: 'CategoryStats!A2',
-          values: [[expect.stringContaining('group by Col1, Col2')]],
+          values: [[expect.stringContaining('group by Col1, Col2, Col3')]],
         }),
       ]),
     );

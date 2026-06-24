@@ -3,15 +3,17 @@ import type { Transaction } from '@entities/transaction';
 import type { CategoryStats, TopCategoryStats } from '../types/analytics-stat.types';
 
 export function calculateCategoryStats(transactions: Transaction[]): CategoryStats[] {
-  const statsByCategory = new Map<string, CategoryStats>();
+  const statsByKey = new Map<string, CategoryStats>();
 
   transactions.forEach((transaction) => {
-    const statsKey = `${transaction.kind}:${transaction.categoryName}`;
+    const { currency } = transaction;
+    const statsKey = `${transaction.kind}:${transaction.categoryName}:${currency}`;
     const currentStats =
-      statsByCategory.get(statsKey) ??
+      statsByKey.get(statsKey) ??
       ({
         categoryName: transaction.categoryName,
         count: 0,
+        currency,
         expense: 0,
         income: 0,
         kind: transaction.kind,
@@ -26,10 +28,10 @@ export function calculateCategoryStats(transactions: Transaction[]): CategorySta
 
     currentStats.count += 1;
     currentStats.total += Math.abs(transaction.amount);
-    statsByCategory.set(statsKey, currentStats);
+    statsByKey.set(statsKey, currentStats);
   });
 
-  return [...statsByCategory.values()].sort((left, right) =>
+  return [...statsByKey.values()].sort((left, right) =>
     left.categoryName === right.categoryName
       ? left.kind.localeCompare(right.kind)
       : left.categoryName.localeCompare(right.categoryName),

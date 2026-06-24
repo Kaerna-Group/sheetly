@@ -8,4 +8,4 @@ export { mapRowToTransaction, mapTransactionToRow } from './lib/transaction-row.
 export { calculateTransactionSummary, type CurrencySummary } from './lib/transaction-summary';
 export { useTransactions } from './model/useTransactions';
 export { useOfflineSyncStatus, type OfflineSyncStatus } from './model/useOfflineSyncStatus';
-export { offlineTransactionsStorage } from './lib/offline-transactions.storage';
+export { createOfflineTransactionsStorage } from './lib/offline-transactions.storage';

@@ -13,14 +13,17 @@ function formatMonthLabel(month: string) {
 }
 
 export function calculateMonthlyStats(transactions: Transaction[]): MonthlyStats[] {
-  const statsByMonth = new Map<string, MonthlyStats>();
+  const statsByKey = new Map<string, MonthlyStats>();
 
   transactions.forEach((transaction) => {
     const month = transaction.date.slice(0, 7);
+    const { currency } = transaction;
+    const key = `${month}:${currency}`;
     const currentStats =
-      statsByMonth.get(month) ??
+      statsByKey.get(key) ??
       ({
         balance: 0,
+        currency,
         expense: 0,
         income: 0,
         label: formatMonthLabel(month),
@@ -34,8 +37,12 @@ export function calculateMonthlyStats(transactions: Transaction[]): MonthlyStats
     }
 
     currentStats.balance += transaction.signedAmount;
-    statsByMonth.set(month, currentStats);
+    statsByKey.set(key, currentStats);
   });
 
-  return [...statsByMonth.values()].sort((left, right) => left.month.localeCompare(right.month));
+  return [...statsByKey.values()].sort((left, right) =>
+    left.month === right.month
+      ? left.currency.localeCompare(right.currency)
+      : left.month.localeCompare(right.month),
+  );
 }

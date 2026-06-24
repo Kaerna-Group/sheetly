@@ -50,6 +50,7 @@ describe('calculateMonthlyStats', () => {
     ).toEqual([
       {
         balance: 750,
+        currency: 'UAH',
         expense: 250,
         income: 1000,
         label: 'May 2026',
@@ -57,11 +58,52 @@ describe('calculateMonthlyStats', () => {
       },
       {
         balance: -100,
+        currency: 'UAH',
         expense: 100,
         income: 0,
         label: 'Jun 2026',
         month: '2026-06',
       },
+    ]);
+  });
+
+  it('groups by month and currency separately — never mixes currencies', () => {
+    const result = calculateMonthlyStats([
+      createTransaction({
+        amount: 100,
+        currency: 'UAH',
+        date: '2026-05-01',
+        id: 'uah-expense',
+        kind: 'expense',
+        signedAmount: -100,
+      }),
+      createTransaction({
+        amount: 50,
+        currency: 'USD',
+        date: '2026-05-01',
+        id: 'usd-expense',
+        kind: 'expense',
+        signedAmount: -50,
+      }),
+    ]);
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ month: '2026-05', currency: 'UAH', expense: 100, income: 0 }),
+        expect.objectContaining({ month: '2026-05', currency: 'USD', expense: 50, income: 0 }),
+      ]),
+    );
+  });
+
+  it('sums same-currency transactions in the same month', () => {
+    expect(
+      calculateMonthlyStats([
+        createTransaction({ amount: 100, id: 'uah-1', kind: 'expense', signedAmount: -100 }),
+        createTransaction({ amount: 50, id: 'uah-2', kind: 'expense', signedAmount: -50 }),
+      ]),
+    ).toEqual([
+      expect.objectContaining({ currency: 'UAH', expense: 150, income: 0, balance: -150 }),
     ]);
   });
 

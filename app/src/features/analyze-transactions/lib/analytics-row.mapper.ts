@@ -30,7 +30,7 @@ function isTransactionKind(value: string | undefined): value is TransactionKind 
 }
 
 export function mapRowToMonthlyStats(row: string[]): MonthlyStats | null {
-  const [month, incomeValue, expenseValue, balanceValue] = row;
+  const [month, currency, incomeValue, expenseValue, balanceValue] = row;
   const income = parseAmount(incomeValue);
   const expense = parseAmount(expenseValue);
   const balance = parseAmount(balanceValue);
@@ -41,6 +41,7 @@ export function mapRowToMonthlyStats(row: string[]): MonthlyStats | null {
 
   return {
     balance,
+    currency: currency?.trim() || '',
     expense,
     income,
     label: formatMonthLabel(month),
@@ -49,7 +50,7 @@ export function mapRowToMonthlyStats(row: string[]): MonthlyStats | null {
 }
 
 export function mapRowToCategoryStats(row: string[]): CategoryStats | null {
-  const [categoryName, kind, totalValue, countValue] = row;
+  const [categoryName, kind, currency, totalValue, countValue] = row;
   const total = parseAmount(totalValue);
   const count = parseAmount(countValue);
 
@@ -60,6 +61,7 @@ export function mapRowToCategoryStats(row: string[]): CategoryStats | null {
   return {
     categoryName,
     count,
+    currency: currency?.trim() || '',
     expense: kind === 'expense' ? total : 0,
     income: kind === 'income' ? total : 0,
     kind,
