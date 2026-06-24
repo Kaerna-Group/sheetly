@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Transaction } from '@entities/transaction';
 import {
@@ -17,17 +17,18 @@ import { EmptyState } from '@shared/ui/empty-state';
 import { Input } from '@shared/ui/input';
 import { Select } from '@shared/ui/select';
 import { Skeleton } from '@shared/ui/skeleton';
+import { cn } from '@shared/lib/classnames/cn';
 
 type TransactionsHistoryProps = {
   containersEnabled?: boolean;
   error: string | null;
   isLoading: boolean;
+  isSyncing?: boolean;
   onCreateTransaction: () => void;
   onDeleteTransaction: (transactionId: string) => void | Promise<void>;
   onEditTransaction: (transaction: Transaction) => void;
   onRefresh: () => void | Promise<void>;
   onRetrySync: () => void | Promise<void>;
-  isSyncing?: boolean;
   syncWarning?: string | null;
   transactions: Transaction[];
 };
@@ -39,10 +40,6 @@ function formatMoney(amount: number, currency = defaultCurrency) {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   })} ${currency}`;
-}
-
-function formatKind(kind: Transaction['kind']) {
-  return kind === 'income' ? 'Income' : 'Expense';
 }
 
 const syncStatusVariants: Record<Transaction['syncStatus'], BadgeVariant> = {
@@ -61,9 +58,7 @@ function useOutsideClose(isOpen: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       if (!ref.current?.contains(event.target as Node)) {
@@ -72,7 +67,6 @@ function useOutsideClose(isOpen: boolean, onClose: () => void) {
     }
 
     document.addEventListener('pointerdown', handlePointerDown);
-
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isOpen, onClose]);
 
@@ -98,23 +92,19 @@ function hasActiveFilters(filters: TransactionFilters) {
 function TransactionsHistorySkeleton() {
   return (
     <div aria-label="Loading transactions" role="status">
-      <div className="hidden grid-cols-[120px_96px_1fr_140px_160px_1fr] gap-3 border-b border-border px-5 py-3 md:grid">
-        {Array.from({ length: 6 }, (_, index) => (
-          <Skeleton className="h-3" key={index} />
-        ))}
-      </div>
       <div className="divide-y divide-border">
-        {Array.from({ length: 6 }, (_, index) => (
-          <div
-            className="grid gap-3 px-5 py-4 md:grid-cols-[120px_96px_1fr_140px_160px_1fr] md:items-center"
-            key={index}
-          >
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-24 md:justify-self-end" />
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-4 w-full max-w-48" />
+        {Array.from({ length: 5 }, (_, index) => (
+          <div className="flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5 md:py-4" key={index}>
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+            <div className="flex flex-col items-end gap-1.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+            <Skeleton className="h-8 w-8 shrink-0 rounded-md" />
           </div>
         ))}
       </div>
@@ -132,7 +122,7 @@ function RowActions({ onDelete, onEdit }: RowActionsProps) {
   const wrapperRef = useOutsideClose(isOpen, () => setIsOpen(false));
 
   return (
-    <div className="relative flex justify-start md:justify-end" ref={wrapperRef}>
+    <div className="relative shrink-0" ref={wrapperRef}>
       <button
         aria-label="Transaction actions"
         className="grid size-8 place-items-center rounded-md border border-border text-lg leading-none text-text-soft hover:bg-surface-hover hover:text-text"
@@ -169,29 +159,6 @@ function RowActions({ onDelete, onEdit }: RowActionsProps) {
   );
 }
 
-function CommentCell({ value }: { value?: string }) {
-  if (!value) {
-    return <div className="text-text-muted">-</div>;
-  }
-
-  return (
-    <div className="max-w-56 truncate text-text-muted" title={value}>
-      {value}
-    </div>
-  );
-}
-
-function TransactionField({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <div className="flex items-start justify-between gap-3 md:block">
-      <span className="shrink-0 text-xs font-semibold uppercase text-text-soft md:hidden">
-        {label}
-      </span>
-      <div className="min-w-0 text-right md:text-left">{children}</div>
-    </div>
-  );
-}
-
 export function TransactionsHistory({
   containersEnabled = false,
   error,
@@ -207,6 +174,7 @@ export function TransactionsHistory({
 }: TransactionsHistoryProps) {
   const [filters, setFilters] = useState<TransactionFilters>(createDefaultTransactionFilters);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+
   const categoryOptions = useMemo(
     () => getTransactionCategoryOptions(transactions),
     [transactions],
@@ -223,17 +191,15 @@ export function TransactionsHistory({
     () => filterTransactions(transactions, filters),
     [filters, transactions],
   );
+
   const isFiltered = hasActiveFilters(filters);
   const isInitialLoading = isLoading && !transactions.length;
-  const hasPendingSync = transactions.some((transaction) =>
-    ['failed', 'pending', 'syncing'].includes(transaction.syncStatus),
+  const hasPendingSync = transactions.some((t) =>
+    ['failed', 'pending', 'syncing'].includes(t.syncStatus),
   );
 
   function updateFilters(nextFilters: Partial<TransactionFilters>) {
-    setFilters((currentFilters) => ({
-      ...currentFilters,
-      ...nextFilters,
-    }));
+    setFilters((current) => ({ ...current, ...nextFilters }));
   }
 
   function clearFilters() {
@@ -258,6 +224,7 @@ export function TransactionsHistory({
       <EmptyState
         actionLabel="Create transaction"
         description="Transactions from Ledger will appear here after the first sync."
+        illustration="wallet"
         onAction={onCreateTransaction}
         onSecondAction={() => void onRefresh()}
         secondActionLabel="Refresh"
@@ -268,6 +235,7 @@ export function TransactionsHistory({
 
   return (
     <Card className="mb-16 p-0">
+      {/* Header */}
       <div className="flex flex-col gap-4 border-b border-border px-5 py-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-base font-semibold text-text">Transactions history</h2>
@@ -300,6 +268,8 @@ export function TransactionsHistory({
           </Button>
         </div>
       </div>
+
+      {/* Filters */}
       <div className="border-b border-border bg-surface-muted/60 px-5 py-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.5fr)_minmax(120px,0.8fr)_minmax(160px,1fr)_auto_auto] lg:items-end">
           <Input
@@ -394,7 +364,10 @@ export function TransactionsHistory({
                 onChange={(container) => updateFilters({ container })}
                 options={[
                   { label: 'All containers', value: '' },
-                  ...containerOptions.map((container) => ({ label: container, value: container })),
+                  ...containerOptions.map((container) => ({
+                    label: container,
+                    value: container,
+                  })),
                 ]}
                 value={filters.container}
               />
@@ -427,6 +400,8 @@ export function TransactionsHistory({
           </div>
         ) : null}
       </div>
+
+      {/* List */}
       {isInitialLoading ? (
         <TransactionsHistorySkeleton />
       ) : !filteredTransactions.length ? (
@@ -438,72 +413,79 @@ export function TransactionsHistory({
           title="No matching transactions"
         />
       ) : (
-        <div>
-          <div className="hidden grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] gap-3 border-b border-border px-5 py-3 text-xs font-semibold uppercase text-text-soft md:grid">
-            <span>Date</span>
-            <span>Type</span>
-            <span>Category</span>
-            <span className="text-right">Amount</span>
-            <span>Payment method</span>
-            <span>Comment</span>
-            <span>Container</span>
-            <span>Status</span>
-            <span className="text-right">Actions</span>
-          </div>
-          <div className="divide-y divide-border">
-            {filteredTransactions.map((transaction) => (
+        <div className="divide-y divide-border">
+          {filteredTransactions.map((transaction) => {
+            const isDeleted = Boolean(transaction.deletedAt);
+            const isIncome = transaction.kind === 'income';
+
+            const metaParts = [
+              transaction.date,
+              transaction.paymentMethod,
+              transaction.comment,
+              containersEnabled ? transaction.containerName : undefined,
+            ]
+              .filter(Boolean)
+              .join(' · ');
+
+            return (
               <div
-                className={
-                  transaction.deletedAt
-                    ? 'grid gap-3 bg-surface-muted px-4 py-4 text-sm opacity-70 md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
-                    : 'grid gap-3 px-4 py-4 text-sm md:grid-cols-[110px_78px_1fr_110px_120px_1fr_110px_86px_104px] md:items-center md:gap-3 md:px-5'
-                }
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 md:gap-4 md:px-5 md:py-4',
+                  isDeleted ? 'bg-surface-muted' : 'transition-colors hover:bg-surface-hover',
+                )}
                 key={transaction.id}
               >
-                <TransactionField label="Date">
-                  <div className="text-text-soft">{transaction.date}</div>
-                </TransactionField>
-                <TransactionField label="Type">
-                  <div className="font-medium text-text-muted">{formatKind(transaction.kind)}</div>
-                </TransactionField>
-                <TransactionField label="Category">
-                  <div className="font-medium text-text">{transaction.categoryName}</div>
-                </TransactionField>
-                <TransactionField label="Amount">
-                  <div
-                    className={
-                      transaction.kind === 'income'
-                        ? 'font-semibold text-emerald-600 md:text-right'
-                        : 'font-semibold text-danger md:text-right'
-                    }
+                <div
+                  className={cn(
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold uppercase',
+                    isDeleted
+                      ? 'bg-border text-text-soft'
+                      : isIncome
+                        ? 'bg-success-soft text-success'
+                        : 'bg-danger-soft text-danger',
+                  )}
+                >
+                  {transaction.categoryName.charAt(0)}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={cn(
+                      'truncate text-sm font-semibold',
+                      isDeleted ? 'text-text-muted line-through' : 'text-text',
+                    )}
+                  >
+                    {transaction.categoryName}
+                  </p>
+                  {metaParts ? (
+                    <p className="mt-0.5 truncate text-xs text-text-soft">{metaParts}</p>
+                  ) : null}
+                </div>
+
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span
+                    className={cn(
+                      'text-sm font-semibold tabular-nums',
+                      isDeleted ? 'text-text-soft' : isIncome ? 'text-success' : 'text-danger',
+                    )}
                   >
                     {formatMoney(transaction.signedAmount, transaction.currency)}
-                  </div>
-                </TransactionField>
-                <TransactionField label="Payment">
-                  <div className="text-text-muted">{transaction.paymentMethod || '-'}</div>
-                </TransactionField>
-                <TransactionField label="Comment">
-                  <CommentCell value={transaction.comment} />
-                </TransactionField>
-                <TransactionField label="Container">
-                  <div className="text-text-muted">{transaction.containerName || '-'}</div>
-                </TransactionField>
-                <TransactionField label="Status">
-                  <div className="flex flex-wrap gap-1">
-                    {transaction.deletedAt ? <Badge variant="neutral">Deleted</Badge> : null}
+                  </span>
+                  <div className="flex flex-wrap justify-end gap-1">
+                    {isDeleted ? <Badge variant="neutral">Deleted</Badge> : null}
                     <Badge variant={syncStatusVariants[transaction.syncStatus]}>
                       {formatSyncStatus(transaction.syncStatus)}
                     </Badge>
                   </div>
-                </TransactionField>
+                </div>
+
                 <RowActions
                   onDelete={() => onDeleteTransaction(transaction.id)}
                   onEdit={() => onEditTransaction(transaction)}
                 />
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
     </Card>

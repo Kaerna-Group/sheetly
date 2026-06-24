@@ -20,7 +20,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 export function getButtonClasses(variant: ButtonVariant, size: ButtonSize, className?: string) {
   return cn(
-    'inline-flex items-center justify-center gap-2 rounded-md font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+    'inline-flex items-center justify-center gap-2 rounded-md font-medium transition active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100',
     variantClasses[variant],
     sizeClasses[size],
     className,
