@@ -58,8 +58,12 @@ export async function readAnalyticsStats({
         spreadsheetId,
       }),
     ]);
-    const monthlyStats = monthlyRange.values.map(mapRowToMonthlyStats).filter(isMonthlyStats);
-    const categoryStats = categoryRange.values.map(mapRowToCategoryStats).filter(isCategoryStats);
+    const monthlyStats = (monthlyRange.values ?? [])
+      .map(mapRowToMonthlyStats)
+      .filter(isMonthlyStats);
+    const categoryStats = (categoryRange.values ?? [])
+      .map(mapRowToCategoryStats)
+      .filter(isCategoryStats);
 
     if (!monthlyStats.length && !categoryStats.length) {
       return localStats;

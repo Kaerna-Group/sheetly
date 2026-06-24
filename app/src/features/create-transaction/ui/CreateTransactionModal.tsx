@@ -7,6 +7,7 @@ import { CategoryCombobox } from '@features/manage-categories';
 import { ContainerCombobox } from '@features/manage-containers';
 import { CurrencySelect } from '@features/manage-currencies';
 import { Button } from '@shared/ui/button';
+import { DatePicker } from '@shared/ui/date-picker';
 import { Input } from '@shared/ui/input';
 import { localStorageService } from '@shared/lib/storage/local-storage.service';
 import { Modal } from '@shared/ui/modal';
@@ -243,11 +244,10 @@ export function CreateTransactionModal({
           <option value="income">Income</option>
         </Select>
         <div className="grid gap-4 md:grid-cols-2">
-          <Input
+          <DatePicker
             id="transaction-date"
             label="Date"
-            onChange={(event) => setValues({ ...values, date: event.target.value })}
-            type="date"
+            onChange={(date) => setValues({ ...values, date })}
             value={values.date}
           />
           <CurrencySelect

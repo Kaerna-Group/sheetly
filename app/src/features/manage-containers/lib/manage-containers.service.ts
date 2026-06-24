@@ -77,7 +77,7 @@ export async function readContainers({
       range: sheetRanges.containersData,
       spreadsheetId,
     });
-    const remoteContainers = valueRange.values
+    const remoteContainers = (valueRange.values ?? [])
       .map(mapRowToContainer)
       .filter((container) => container !== null);
 

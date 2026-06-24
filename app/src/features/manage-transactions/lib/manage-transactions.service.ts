@@ -97,7 +97,7 @@ export async function readTransactions({
       spreadsheetId,
     });
 
-    return valueRange.values
+    return (valueRange.values ?? [])
       .map(mapRowToTransaction)
       .filter((transaction) => transaction !== null)
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
@@ -155,7 +155,7 @@ async function findTransactionRowIndex({
     range: sheetRanges.ledgerData,
     spreadsheetId,
   });
-  const rowIndex = valueRange.values.findIndex((row) => row[0] === transactionId);
+  const rowIndex = (valueRange.values ?? []).findIndex((row) => row[0] === transactionId);
 
   return rowIndex === -1 ? null : rowIndex + 2;
 }
@@ -231,13 +231,14 @@ export async function softDeleteTransaction({
       range: sheetRanges.ledgerData,
       spreadsheetId,
     });
-    const rowIndex = valueRange.values.findIndex((row) => row[0] === transactionId);
+    const rows = valueRange.values ?? [];
+    const rowIndex = rows.findIndex((row) => row[0] === transactionId);
 
     if (rowIndex === -1) {
       throw new Error('Transaction was not found in Ledger.');
     }
 
-    const transaction = mapRowToTransaction(valueRange.values[rowIndex]);
+    const transaction = mapRowToTransaction(rows[rowIndex]);
 
     if (!transaction) {
       throw new Error('Transaction row is invalid.');

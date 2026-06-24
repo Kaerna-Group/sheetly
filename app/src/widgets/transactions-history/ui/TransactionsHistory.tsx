@@ -12,6 +12,7 @@ import {
 import { Badge, type BadgeVariant } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
+import { DatePicker } from '@shared/ui/date-picker';
 import { EmptyState } from '@shared/ui/empty-state';
 import { Input } from '@shared/ui/input';
 import { Skeleton } from '@shared/ui/skeleton';
@@ -53,24 +54,6 @@ const syncStatusVariants: Record<Transaction['syncStatus'], BadgeVariant> = {
 
 function formatSyncStatus(status: Transaction['syncStatus']) {
   return status[0].toUpperCase() + status.slice(1);
-}
-
-function formatDateLabel(value: string) {
-  if (!value) {
-    return 'dd.mm.yyyy';
-  }
-
-  const [year, month, day] = value.split('-');
-
-  return `${day}.${month}.${year}`;
-}
-
-function toDateValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
 }
 
 function useOutsideClose(isOpen: boolean, onClose: () => void) {
@@ -188,135 +171,6 @@ function FilterSelect({ id, label, onChange, options, value }: FilterSelectProps
               {option.label}
             </button>
           ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-type DateFilterFieldProps = {
-  id: string;
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-};
-
-function DateFilterField({ id, label, onChange, value }: DateFilterFieldProps) {
-  const selectedDate = value ? new Date(`${value}T00:00:00`) : new Date();
-  const [isOpen, setIsOpen] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(
-    new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-  );
-  const wrapperRef = useOutsideClose(isOpen, () => setIsOpen(false));
-  const monthLabel = visibleMonth.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-  const firstWeekday = (visibleMonth.getDay() + 6) % 7;
-  const daysInMonth = new Date(
-    visibleMonth.getFullYear(),
-    visibleMonth.getMonth() + 1,
-    0,
-  ).getDate();
-  const calendarDays = [
-    ...Array.from({ length: firstWeekday }, () => null),
-    ...Array.from(
-      { length: daysInMonth },
-      (_, index) => new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), index + 1),
-    ),
-  ];
-
-  function moveMonth(direction: -1 | 1) {
-    setVisibleMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() + direction, 1),
-    );
-  }
-
-  return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={wrapperRef}>
-      <span id={`${id}-label`}>{label}</span>
-      <button
-        aria-expanded={isOpen}
-        aria-labelledby={`${id}-label`}
-        className="flex h-10 items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-900 shadow-sm outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100"
-        onClick={() => setIsOpen((current) => !current)}
-        type="button"
-      >
-        <span className={value ? 'text-zinc-900' : 'text-zinc-400'}>{formatDateLabel(value)}</span>
-        <span className="text-zinc-400">▦</span>
-      </button>
-      {isOpen ? (
-        <div className="absolute top-full z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-lg border border-zinc-200 bg-white p-3 shadow-xl">
-          <div className="flex items-center justify-between">
-            <button
-              className="rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100"
-              onClick={() => moveMonth(-1)}
-              type="button"
-            >
-              ←
-            </button>
-            <p className="text-sm font-semibold text-zinc-950">{monthLabel}</p>
-            <button
-              className="rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-100"
-              onClick={() => moveMonth(1)}
-              type="button"
-            >
-              →
-            </button>
-          </div>
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-zinc-400">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-          <div className="mt-2 grid grid-cols-7 gap-1">
-            {calendarDays.map((date, index) =>
-              date ? (
-                <button
-                  className={
-                    toDateValue(date) === value
-                      ? 'h-8 rounded-md bg-brand text-sm font-semibold text-white'
-                      : 'h-8 rounded-md text-sm text-zinc-700 hover:bg-indigo-50 hover:text-brand'
-                  }
-                  key={toDateValue(date)}
-                  onClick={() => {
-                    onChange(toDateValue(date));
-                    setIsOpen(false);
-                  }}
-                  type="button"
-                >
-                  {date.getDate()}
-                </button>
-              ) : (
-                <span key={`empty-${index}`} />
-              ),
-            )}
-          </div>
-          <div className="mt-3 flex justify-between border-t border-zinc-100 pt-3">
-            <button
-              className="text-sm font-medium text-zinc-500 hover:text-danger"
-              onClick={() => {
-                onChange('');
-                setIsOpen(false);
-              }}
-              type="button"
-            >
-              Clear
-            </button>
-            <button
-              className="text-sm font-medium text-brand"
-              onClick={() => {
-                const today = new Date();
-
-                setVisibleMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-                onChange(toDateValue(today));
-                setIsOpen(false);
-              }}
-              type="button"
-            >
-              Today
-            </button>
-          </div>
         </div>
       ) : null}
     </div>
@@ -460,6 +314,8 @@ export function TransactionsHistory({
         actionLabel="Create transaction"
         description="Transactions from Ledger will appear here after the first sync."
         onAction={onCreateTransaction}
+        onSecondAction={() => void onRefresh()}
+        secondActionLabel="Refresh"
         title="No transactions yet"
       />
     );
@@ -550,13 +406,13 @@ export function TransactionsHistory({
         </div>
         {isAdvancedFiltersOpen ? (
           <div className="mt-4 grid gap-4 rounded-md border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(130px,1fr))]">
-            <DateFilterField
+            <DatePicker
               id="transactions-date-from"
               label="Date from"
               onChange={(dateFrom) => updateFilters({ dateFrom })}
               value={filters.dateFrom}
             />
-            <DateFilterField
+            <DatePicker
               id="transactions-date-to"
               label="Date to"
               onChange={(dateTo) => updateFilters({ dateTo })}

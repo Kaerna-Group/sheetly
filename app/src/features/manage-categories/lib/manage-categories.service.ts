@@ -76,7 +76,7 @@ export async function readCategories({
       range: sheetRanges.categoriesData,
       spreadsheetId,
     });
-    const remoteCategories = valueRange.values
+    const remoteCategories = (valueRange.values ?? [])
       .map(mapRowToCategory)
       .filter((category) => category !== null);
 

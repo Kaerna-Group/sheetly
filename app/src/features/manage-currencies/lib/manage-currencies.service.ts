@@ -65,7 +65,7 @@ export async function readCurrencies({
       range: sheetRanges.currenciesData,
       spreadsheetId,
     });
-    const remoteCurrencies = valueRange.values
+    const remoteCurrencies = (valueRange.values ?? [])
       .map(mapRowToCurrency)
       .filter((currency): currency is Currency => currency !== null);
 
