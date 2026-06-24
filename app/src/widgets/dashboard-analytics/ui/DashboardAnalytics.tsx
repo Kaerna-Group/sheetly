@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type JSX, useMemo, useState } from 'react';
 
 import type { Transaction } from '@entities/transaction';
 import {
@@ -95,16 +95,48 @@ function getExpenseCategoryStats(categoryStats: CategoryStats[]) {
   return categoryStats.filter((categoryStatsItem) => categoryStatsItem.kind === 'expense');
 }
 
-function renderEmptyChart(title: string) {
-  return <EmptyState description="Add transactions to see this chart." title={title} />;
+type ChartTooltipContentProps = {
+  active?: boolean;
+  formatter?: (value: number) => string;
+  label?: string;
+  payload?: Array<{ color?: string; name?: string; value?: number }>;
+};
+
+function ChartTooltipContent({ active, formatter, label, payload }: ChartTooltipContentProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-md border border-border bg-surface px-3 py-2 shadow-lg">
+      {label ? <p className="mb-1 text-xs text-text-soft">{label}</p> : null}
+      {payload.map((entry) => (
+        <p className="text-sm text-text" key={entry.name}>
+          <span style={{ color: entry.color }}>{'● '}</span>
+          {entry.name}: {formatter ? formatter(Number(entry.value)) : String(entry.value)}
+        </p>
+      ))}
+    </div>
+  );
 }
+
+function getChartEmptyTitle(chartId: ChartId): string {
+  if (chartId === 'monthly-cashflow') return 'No monthly stats';
+  if (chartId === 'balance-trend') return 'No balance trend';
+  if (chartId === 'expense-categories') return 'No expenses yet';
+  if (chartId === 'category-bar') return 'No category totals';
+  if (chartId === 'income-expense-ratio') return 'No totals yet';
+  return 'No daily expenses';
+}
+
+const axisTickStyle = { fill: 'var(--color-text-soft)', fontSize: 12 };
 
 function renderChart({
   categoryStats,
   chartId,
   dailyExpenseStats,
   monthlyStats,
-}: Pick<ChartSlotProps, 'categoryStats' | 'chartId' | 'dailyExpenseStats' | 'monthlyStats'>) {
+}: Pick<
+  ChartSlotProps,
+  'categoryStats' | 'chartId' | 'dailyExpenseStats' | 'monthlyStats'
+>): JSX.Element | null {
   const expenseCategoryStats = getExpenseCategoryStats(categoryStats);
   const ratioStats = [
     {
@@ -117,18 +149,18 @@ function renderChart({
     },
   ];
 
+  const tooltipEl = <ChartTooltipContent formatter={formatMoney} />;
+
   if (chartId === 'monthly-cashflow') {
-    if (!monthlyStats.length) {
-      return renderEmptyChart('No monthly stats');
-    }
+    if (!monthlyStats.length) return null;
 
     return (
       <BarChart data={monthlyStats}>
-        <CartesianGrid stroke="#e4e4e7" strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="label" tickLine={false} />
-        <YAxis tickFormatter={formatMoney} tickLine={false} width={56} />
-        <Tooltip formatter={(value) => formatMoney(Number(value))} />
-        <Legend />
+        <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="label" tick={axisTickStyle} tickLine={false} />
+        <YAxis tick={axisTickStyle} tickFormatter={formatMoney} tickLine={false} width={56} />
+        <Tooltip content={tooltipEl} />
+        <Legend wrapperStyle={{ color: 'var(--color-text-muted)', fontSize: 12 }} />
         <Bar dataKey="income" fill="#059669" name="Income" radius={[4, 4, 0, 0]} />
         <Bar dataKey="expense" fill="#dc2626" name="Expense" radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -136,25 +168,21 @@ function renderChart({
   }
 
   if (chartId === 'balance-trend') {
-    if (!monthlyStats.length) {
-      return renderEmptyChart('No balance trend');
-    }
+    if (!monthlyStats.length) return null;
 
     return (
       <LineChart data={monthlyStats}>
-        <CartesianGrid stroke="#e4e4e7" strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="label" tickLine={false} />
-        <YAxis tickFormatter={formatMoney} tickLine={false} width={56} />
-        <Tooltip formatter={(value) => formatMoney(Number(value))} />
+        <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="label" tick={axisTickStyle} tickLine={false} />
+        <YAxis tick={axisTickStyle} tickFormatter={formatMoney} tickLine={false} width={56} />
+        <Tooltip content={tooltipEl} />
         <Line dataKey="balance" name="Balance" stroke="#4f46e5" strokeWidth={3} type="monotone" />
       </LineChart>
     );
   }
 
   if (chartId === 'expense-categories') {
-    if (!expenseCategoryStats.length) {
-      return renderEmptyChart('No expenses yet');
-    }
+    if (!expenseCategoryStats.length) return null;
 
     return (
       <PieChart>
@@ -173,38 +201,34 @@ function renderChart({
             />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => formatMoney(Number(value))} />
+        <Tooltip content={tooltipEl} />
       </PieChart>
     );
   }
 
   if (chartId === 'category-bar') {
-    if (!expenseCategoryStats.length) {
-      return renderEmptyChart('No category totals');
-    }
+    if (!expenseCategoryStats.length) return null;
 
     return (
       <BarChart data={[...expenseCategoryStats].sort((left, right) => right.total - left.total)}>
-        <CartesianGrid stroke="#e4e4e7" strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="categoryName" tickLine={false} />
-        <YAxis tickFormatter={formatMoney} tickLine={false} width={56} />
-        <Tooltip formatter={(value) => formatMoney(Number(value))} />
+        <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="categoryName" tick={axisTickStyle} tickLine={false} />
+        <YAxis tick={axisTickStyle} tickFormatter={formatMoney} tickLine={false} width={56} />
+        <Tooltip content={tooltipEl} />
         <Bar dataKey="total" fill="#0f766e" name="Total" radius={[4, 4, 0, 0]} />
       </BarChart>
     );
   }
 
   if (chartId === 'income-expense-ratio') {
-    if (!ratioStats.some((stat) => stat.total > 0)) {
-      return renderEmptyChart('No totals yet');
-    }
+    if (!ratioStats.some((stat) => stat.total > 0)) return null;
 
     return (
       <BarChart data={ratioStats}>
-        <CartesianGrid stroke="#e4e4e7" strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="label" tickLine={false} />
-        <YAxis tickFormatter={formatMoney} tickLine={false} width={56} />
-        <Tooltip formatter={(value) => formatMoney(Number(value))} />
+        <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="label" tick={axisTickStyle} tickLine={false} />
+        <YAxis tick={axisTickStyle} tickFormatter={formatMoney} tickLine={false} width={56} />
+        <Tooltip content={tooltipEl} />
         <Bar dataKey="total" name="Total" radius={[4, 4, 0, 0]}>
           {ratioStats.map((stat, index) => (
             <Cell fill={index === 0 ? '#059669' : '#dc2626'} key={stat.label} />
@@ -214,16 +238,14 @@ function renderChart({
     );
   }
 
-  if (!dailyExpenseStats.length) {
-    return renderEmptyChart('No daily expenses');
-  }
+  if (!dailyExpenseStats.length) return null;
 
   return (
     <LineChart data={dailyExpenseStats}>
-      <CartesianGrid stroke="#e4e4e7" strokeDasharray="3 3" vertical={false} />
-      <XAxis dataKey="label" tickLine={false} />
-      <YAxis tickFormatter={formatMoney} tickLine={false} width={56} />
-      <Tooltip formatter={(value) => formatMoney(Number(value))} />
+      <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" vertical={false} />
+      <XAxis dataKey="label" tick={axisTickStyle} tickLine={false} />
+      <YAxis tick={axisTickStyle} tickFormatter={formatMoney} tickLine={false} width={56} />
+      <Tooltip content={tooltipEl} />
       <Line dataKey="expense" name="Expense" stroke="#dc2626" strokeWidth={3} type="monotone" />
     </LineChart>
   );
@@ -241,6 +263,7 @@ function ChartSlot({
   slotLabel,
 }: ChartSlotProps) {
   const chartMeta = getChartMeta(chartId);
+  const chart = renderChart({ categoryStats, chartId, dailyExpenseStats, monthlyStats });
 
   return (
     <Card
@@ -250,7 +273,7 @@ function ChartSlot({
         const droppedChartId = event.dataTransfer.getData('text/plain');
 
         if (
-          chartCatalog.some((chart) => chart.id === droppedChartId) &&
+          chartCatalog.some((c) => c.id === droppedChartId) &&
           (!isWide || supportsWideChart(droppedChartId as ChartId))
         ) {
           onDropChart(droppedChartId as ChartId);
@@ -259,9 +282,9 @@ function ChartSlot({
     >
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase text-zinc-400">{slotLabel}</p>
-          <h2 className="mt-1 text-base font-semibold text-zinc-950">{chartMeta.title}</h2>
-          <p className="mt-1 text-sm text-zinc-500">{chartMeta.description}</p>
+          <p className="text-xs font-semibold uppercase text-text-soft">{slotLabel}</p>
+          <h2 className="mt-1 text-base font-semibold text-text">{chartMeta.title}</h2>
+          <p className="mt-1 text-sm text-text-soft">{chartMeta.description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {isWide && onSplit ? (
@@ -275,9 +298,18 @@ function ChartSlot({
         </div>
       </div>
       <div className={isWide ? 'h-64 md:h-80' : 'h-56 md:h-72'}>
-        <ResponsiveContainer height="100%" width="100%">
-          {renderChart({ categoryStats, chartId, dailyExpenseStats, monthlyStats })}
-        </ResponsiveContainer>
+        {chart ? (
+          <ResponsiveContainer height="100%" width="100%">
+            {chart}
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <EmptyState
+              description="Add transactions to see this chart."
+              title={getChartEmptyTitle(chartId)}
+            />
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -290,21 +322,29 @@ function ChartDragPreview({
   monthlyStats,
 }: Pick<ChartSlotProps, 'categoryStats' | 'chartId' | 'dailyExpenseStats' | 'monthlyStats'>) {
   const chartMeta = getChartMeta(chartId);
+  const chart = renderChart({ categoryStats, chartId, dailyExpenseStats, monthlyStats });
 
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed -left-[10000px] top-0 w-80 rounded-md border border-zinc-200 bg-white p-3 shadow-xl"
+      className="pointer-events-none fixed -left-[10000px] top-0 w-80 rounded-md border border-border bg-surface p-3 shadow-xl"
       data-chart-drag-preview
     >
       <div className="mb-2">
-        <p className="text-xs font-semibold uppercase text-zinc-400">Chart preview</p>
-        <h3 className="mt-1 text-sm font-semibold text-zinc-950">{chartMeta.title}</h3>
+        <p className="text-xs font-semibold uppercase text-text-soft">Chart preview</p>
+        <h3 className="mt-1 text-sm font-semibold text-text">{chartMeta.title}</h3>
       </div>
       <div className="h-44">
-        <ResponsiveContainer height="100%" width="100%">
-          {renderChart({ categoryStats, chartId, dailyExpenseStats, monthlyStats })}
-        </ResponsiveContainer>
+        {chart ? (
+          <ResponsiveContainer height="100%" width="100%">
+            {chart}
+          </ResponsiveContainer>
+        ) : (
+          <EmptyState
+            description="Add transactions to see this chart."
+            title={getChartEmptyTitle(chartId)}
+          />
+        )}
       </div>
     </div>
   );
@@ -400,7 +440,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
     <section className="relative">
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-medium text-zinc-500">
+          <p className="text-sm font-medium text-text-soft">
             {source === 'google-sheets' ? 'Google Sheets analytics' : 'Local analytics'}
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -468,8 +508,8 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
             <div className="mb-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold text-zinc-950">Chart library</h2>
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <h2 className="text-base font-semibold text-text">Chart library</h2>
+                  <p className="mt-1 text-sm text-text-soft">
                     Choose chart for slot {selectedSlotIndex + 1} or wide view.
                   </p>
                 </div>
@@ -483,8 +523,8 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
                 <div
                   className={
                     chartSlots[selectedSlotIndex] === chart.id || wideChartId === chart.id
-                      ? 'rounded-md border border-brand bg-indigo-50 px-3 py-3 text-left'
-                      : 'rounded-md border border-zinc-200 bg-white px-3 py-3 text-left hover:border-zinc-300 hover:bg-zinc-50'
+                      ? 'rounded-md border border-brand bg-brand-soft px-3 py-3 text-left'
+                      : 'rounded-md border border-border bg-surface px-3 py-3 text-left hover:border-border-strong hover:bg-surface-hover'
                   }
                   draggable
                   key={chart.id}
@@ -502,8 +542,8 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
                   }}
                   tabIndex={0}
                 >
-                  <span className="block text-sm font-semibold text-zinc-950">{chart.title}</span>
-                  <span className="mt-1 block text-sm text-zinc-500">{chart.description}</span>
+                  <span className="block text-sm font-semibold text-text">{chart.title}</span>
+                  <span className="mt-1 block text-sm text-text-soft">{chart.description}</span>
                   <ChartDragPreview
                     categoryStats={categoryStats}
                     chartId={chart.id}

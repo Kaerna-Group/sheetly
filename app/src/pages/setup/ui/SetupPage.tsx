@@ -12,7 +12,7 @@ export function SetupPage() {
   const [isConnectOpen, setIsConnectOpen] = useState(false);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-50 p-4">
+    <main className="grid min-h-screen place-items-center bg-app-bg p-4">
       <Card className="w-full max-w-xl">
         <PageHeader
           description="Sheetly stores finance data in your own Google Sheet. Paste a spreadsheet link to create the local connection; Google authorization comes in the next milestone."

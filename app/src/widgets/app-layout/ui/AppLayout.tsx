@@ -22,25 +22,25 @@ export function AppLayout({ actions, children }: AppLayoutProps) {
     : { label: 'Offline', variant: 'warning' as const };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-zinc-200 bg-white">
+    <div className="min-h-screen bg-app-bg">
+      <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand">
               {appConfig.name}
             </p>
-            <p className="text-sm text-zinc-600">{appConfig.description}</p>
+            <p className="text-sm text-text-muted">{appConfig.description}</p>
           </div>
           <nav className="flex w-full flex-wrap items-center gap-2 text-sm md:w-auto md:justify-end">
             <Badge variant={syncBadge.variant}>{syncBadge.label}</Badge>
             <NavLink
-              className="rounded-md px-3 py-2 text-zinc-700 hover:bg-zinc-100"
+              className="rounded-md px-3 py-2 text-text-muted hover:bg-surface-hover"
               to={routePaths.home}
             >
               Dashboard
             </NavLink>
             <NavLink
-              className="rounded-md px-3 py-2 text-zinc-700 hover:bg-zinc-100"
+              className="rounded-md px-3 py-2 text-text-muted hover:bg-surface-hover"
               to={routePaths.settings}
             >
               Settings

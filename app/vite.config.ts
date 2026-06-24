@@ -18,6 +18,7 @@ export default defineConfig({
     },
   },
   test: {
+    setupFiles: ['./src/test-setup.ts'],
     coverage: {
       exclude: [
         'dist/**',
@@ -30,6 +31,12 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',
+      thresholds: {
+        branches: 33,
+        functions: 33,
+        lines: 35,
+        statements: 35,
+      },
     },
     environment: 'jsdom',
     globals: true,

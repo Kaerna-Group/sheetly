@@ -12,14 +12,14 @@ export function SetupSpreadsheetButton() {
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold text-zinc-950">Spreadsheet template</h2>
+          <h2 className="text-lg font-semibold text-text">Spreadsheet template</h2>
           <Badge
             variant={status === 'ready' ? 'success' : status === 'error' ? 'danger' : 'neutral'}
           >
             {status === 'ready' ? 'Ready' : status === 'error' ? 'Needs attention' : 'Not checked'}
           </Badge>
         </div>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-text-muted">
           Create required sheets, headers, default categories and template version.
         </p>
         {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}

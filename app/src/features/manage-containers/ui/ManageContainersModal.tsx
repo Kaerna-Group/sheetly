@@ -57,15 +57,15 @@ export function ManageContainersModal({ isOpen, onClose }: ManageContainersModal
             Add
           </Button>
         </div>
-        <div className="divide-y divide-zinc-100 rounded-md border border-zinc-200">
+        <div className="divide-y divide-border rounded-md border border-border">
           {isLoading ? (
-            <div className="px-3 py-4 text-sm text-zinc-500">Loading containers...</div>
+            <div className="px-3 py-4 text-sm text-text-soft">Loading containers...</div>
           ) : containers.length ? (
             containers.map((container) => (
               <div className="flex items-center justify-between gap-3 px-3 py-3" key={container.id}>
                 <div>
-                  <p className="font-medium text-zinc-950">{container.name}</p>
-                  <p className="text-sm text-zinc-500">{container.currency}</p>
+                  <p className="font-medium text-text">{container.name}</p>
+                  <p className="text-sm text-text-soft">{container.currency}</p>
                 </div>
                 <Badge variant={container.isDefault ? 'neutral' : 'info'}>
                   {container.isDefault ? 'Default' : 'Custom'}
@@ -73,7 +73,7 @@ export function ManageContainersModal({ isOpen, onClose }: ManageContainersModal
               </div>
             ))
           ) : (
-            <div className="px-3 py-4 text-sm text-zinc-500">No containers yet.</div>
+            <div className="px-3 py-4 text-sm text-text-soft">No containers yet.</div>
           )}
         </div>
       </div>

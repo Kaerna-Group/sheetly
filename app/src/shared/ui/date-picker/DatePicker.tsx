@@ -85,7 +85,7 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
   const todayStr = toDateString(today);
 
   return (
-    <div className="relative grid gap-2 text-sm font-medium text-zinc-700" ref={containerRef}>
+    <div className="relative grid gap-2 text-sm font-medium text-text-muted" ref={containerRef}>
       {label ? <span id={`${inputId}-label`}>{label}</span> : null}
 
       <button
@@ -93,9 +93,9 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
         aria-haspopup="dialog"
         aria-labelledby={label ? `${inputId}-label` : undefined}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm outline-none transition hover:border-zinc-300 focus:border-brand focus:ring-2 focus:ring-indigo-100',
-          value ? 'text-zinc-900' : 'text-zinc-400',
-          error && 'border-danger focus:border-danger focus:ring-red-100',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-left text-sm outline-none transition hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand-ring',
+          value ? 'text-text' : 'text-text-soft',
+          error && 'border-danger focus:border-danger focus:ring-danger-soft',
         )}
         id={inputId}
         onClick={() => setIsOpen((o) => !o)}
@@ -106,29 +106,29 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
       </button>
 
       {description ? (
-        <span className={cn('text-xs font-normal text-zinc-500', error && 'text-danger')}>
+        <span className={cn('text-xs font-normal text-text-soft', error && 'text-danger')}>
           {description}
         </span>
       ) : null}
 
       {isOpen ? (
         <div
-          className="absolute left-0 top-full z-50 mt-1.5 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl"
+          className="absolute left-0 top-full z-50 mt-1.5 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
           role="dialog"
         >
           <div className="flex items-center justify-between px-3 py-2.5">
             <button
-              className="flex size-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="flex size-7 items-center justify-center rounded-md text-text-soft transition hover:bg-surface-hover hover:text-text-muted"
               onClick={() => moveMonth(-1)}
               type="button"
             >
               <ChevronLeftIcon />
             </button>
-            <span className="text-sm font-semibold text-zinc-900">
+            <span className="text-sm font-semibold text-text">
               {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
             </span>
             <button
-              className="flex size-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="flex size-7 items-center justify-center rounded-md text-text-soft transition hover:bg-surface-hover hover:text-text-muted"
               onClick={() => moveMonth(1)}
               type="button"
             >
@@ -139,7 +139,7 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
           <div className="px-3 pb-2">
             <div className="grid grid-cols-7">
               {WEEKDAYS.map((day) => (
-                <div className="py-1 text-center text-xs font-medium text-zinc-400" key={day}>
+                <div className="py-1 text-center text-xs font-medium text-text-soft" key={day}>
                   {day}
                 </div>
               ))}
@@ -162,10 +162,10 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
                     className={cn(
                       'flex h-8 w-full items-center justify-center rounded-lg text-sm transition',
                       isSelected
-                        ? 'bg-brand font-semibold text-white'
+                        ? 'bg-brand font-semibold text-text-inverted'
                         : isToday
-                          ? 'border border-brand font-semibold text-brand hover:bg-indigo-50'
-                          : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900',
+                          ? 'border border-brand font-semibold text-brand hover:bg-brand-soft'
+                          : 'text-text-muted hover:bg-surface-hover hover:text-text',
                     )}
                     key={day}
                     onClick={() => {
@@ -181,9 +181,9 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-zinc-100 px-4 py-2.5">
+          <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
             <button
-              className="text-xs font-medium text-zinc-500 transition hover:text-danger"
+              className="text-xs font-medium text-text-soft transition hover:text-danger"
               onClick={() => {
                 onChange('');
                 setIsOpen(false);
@@ -193,7 +193,7 @@ export function DatePicker({ error, hint, id, label, onChange, value }: DatePick
               Clear
             </button>
             <button
-              className="text-xs font-medium text-brand transition hover:text-indigo-500"
+              className="text-xs font-medium text-brand transition hover:text-brand-hover"
               onClick={() => {
                 const t = new Date();
                 setViewDate(new Date(t.getFullYear(), t.getMonth(), 1));
@@ -215,7 +215,7 @@ function CalendarIcon() {
   return (
     <svg
       aria-hidden="true"
-      className="size-4 shrink-0 text-zinc-400"
+      className="size-4 shrink-0 text-text-soft"
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
