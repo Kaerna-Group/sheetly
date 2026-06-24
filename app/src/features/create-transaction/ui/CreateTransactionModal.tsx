@@ -11,7 +11,7 @@ import { DatePicker } from '@shared/ui/date-picker';
 import { Input } from '@shared/ui/input';
 import { localStorageService } from '@shared/lib/storage/local-storage.service';
 import { Modal } from '@shared/ui/modal';
-import { Select } from '@shared/ui/select';
+import { cn } from '@shared/lib/classnames/cn';
 
 import { mapFormToTransaction } from '../lib/map-form-to-transaction';
 import { createTransactionFormSchema } from '../model/transaction-form.schema';
@@ -144,6 +144,16 @@ export function CreateTransactionModal({
   );
   const [formError, setFormError] = useState<string | null>(null);
 
+  function switchKind(kind: 'income' | 'expense') {
+    setValues({
+      ...values,
+      categoryId: selectedCategory?.kind === kind ? values.categoryId : '',
+      categoryName: selectedCategory?.kind === kind ? values.categoryName : '',
+      kind,
+    });
+    setSelectedCategory((current) => (current?.kind === kind ? current : null));
+  }
+
   function selectCategory(category: Category) {
     setSelectedCategory(category);
     setValues({
@@ -222,28 +232,32 @@ export function CreateTransactionModal({
             {visibleError}
           </div>
         ) : null}
-        <Select
-          id="transaction-kind"
-          label="Type"
-          onChange={(nextKind) => {
-            const kind = nextKind as 'income' | 'expense';
-
-            setValues({
-              ...values,
-              categoryId: selectedCategory?.kind === kind ? values.categoryId : '',
-              categoryName: selectedCategory?.kind === kind ? values.categoryName : '',
-              kind,
-            });
-            setSelectedCategory((currentCategory) =>
-              currentCategory?.kind === kind ? currentCategory : null,
-            );
-          }}
-          options={[
-            { label: 'Expense', value: 'expense' },
-            { label: 'Income', value: 'income' },
-          ]}
-          value={values.kind}
-        />
+        <div className="grid grid-cols-2 rounded-xl bg-surface-muted p-1">
+          <button
+            className={cn(
+              'rounded-lg py-2 text-sm font-medium transition-all',
+              values.kind === 'expense'
+                ? 'bg-surface text-danger shadow-sm'
+                : 'text-text-soft hover:text-text-muted',
+            )}
+            onClick={() => switchKind('expense')}
+            type="button"
+          >
+            Expense
+          </button>
+          <button
+            className={cn(
+              'rounded-lg py-2 text-sm font-medium transition-all',
+              values.kind === 'income'
+                ? 'bg-surface text-success shadow-sm'
+                : 'text-text-soft hover:text-text-muted',
+            )}
+            onClick={() => switchKind('income')}
+            type="button"
+          >
+            Income
+          </button>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <DatePicker
             id="transaction-date"

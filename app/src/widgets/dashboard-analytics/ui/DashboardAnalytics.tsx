@@ -60,6 +60,15 @@ type DailyExpenseStats = {
 
 const chartColors = ['#4f46e5', '#0f766e', '#dc2626', '#9333ea', '#ca8a04', '#0891b2'];
 
+const chartTypeLabels: Record<string, string> = {
+  'balance-trend': 'Line',
+  'category-bar': 'Bar',
+  'daily-expenses': 'Line',
+  'expense-categories': 'Pie',
+  'income-expense-ratio': 'Bar',
+  'monthly-cashflow': 'Bar',
+};
+
 function formatMoney(value: number) {
   return value.toLocaleString('en-US', {
     maximumFractionDigits: 0,
@@ -267,7 +276,11 @@ function ChartSlot({
 
   return (
     <Card
-      className={isWide ? 'min-h-[360px] md:min-h-[420px]' : 'min-h-[320px] md:min-h-[360px]'}
+      className={
+        isWide
+          ? 'min-h-[360px] md:min-h-[420px] hover:border-brand'
+          : 'min-h-[320px] md:min-h-[360px] hover:border-brand'
+      }
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         const droppedChartId = event.dataTransfer.getData('text/plain');
@@ -289,11 +302,11 @@ function ChartSlot({
         <div className="flex flex-wrap gap-2">
           {isWide && onSplit ? (
             <Button onClick={onSplit} size="sm" variant="ghost">
-              Split view
+              Two-column view
             </Button>
           ) : null}
           <Button onClick={onOpenPicker} size="sm" variant="secondary">
-            Change
+            Customize
           </Button>
         </div>
       </div>
@@ -431,6 +444,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
     return (
       <EmptyState
         description="Analytics will appear after you add transactions to Ledger."
+        illustration="chart"
         title="No analytics yet"
       />
     );
@@ -463,7 +477,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
               onClick={() => setIsPickerOpen((current) => !current)}
               variant="secondary"
             >
-              {isPickerOpen ? 'Hide charts' : 'Choose charts'}
+              {isPickerOpen ? 'Close' : 'Customize dashboard'}
             </Button>
           </div>
         </div>
@@ -477,7 +491,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
             onDropChart={updateWideChart}
             onOpenPicker={() => setIsPickerOpen(true)}
             onSplit={clearWideChart}
-            slotLabel="Wide chart"
+            slotLabel="Focus view"
           />
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
@@ -488,7 +502,7 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
               monthlyStats={monthlyStats}
               onDropChart={(chartId) => updateChartSlot(0, chartId)}
               onOpenPicker={() => openPicker(0)}
-              slotLabel="Slot 1"
+              slotLabel="Main insight"
             />
             <ChartSlot
               categoryStats={categoryStats}
@@ -497,81 +511,108 @@ export function DashboardAnalytics({ transactions }: DashboardAnalyticsProps) {
               monthlyStats={monthlyStats}
               onDropChart={(chartId) => updateChartSlot(1, chartId)}
               onOpenPicker={() => openPicker(1)}
-              slotLabel="Slot 2"
+              slotLabel="Secondary insight"
             />
           </div>
         )}
       </div>
       {isPickerOpen ? (
-        <aside className="fixed inset-x-3 bottom-3 top-16 z-40 overflow-y-auto sm:inset-x-4 sm:bottom-4 sm:top-20 xl:inset-x-auto xl:right-4 xl:w-80">
-          <Card className="min-h-full">
-            <div className="mb-4">
-              <div className="flex items-start justify-between gap-3">
+        <>
+          <div
+            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[2px]"
+            onClick={() => setIsPickerOpen(false)}
+          />
+          <aside className="animate-drawer-in-right fixed inset-x-3 bottom-3 top-16 z-40 overflow-y-auto sm:inset-x-4 sm:bottom-4 sm:top-20 xl:inset-x-auto xl:right-4 xl:w-96">
+            <Card className="min-h-full">
+              <div className="mb-5 flex items-start justify-between gap-3 border-b border-border pb-4">
                 <div>
-                  <h2 className="text-base font-semibold text-text">Chart library</h2>
+                  <h2 className="text-base font-semibold text-text">Customize dashboard</h2>
                   <p className="mt-1 text-sm text-text-soft">
-                    Choose chart for slot {selectedSlotIndex + 1} or wide view.
+                    Drag a chart onto the canvas or assign it to a slot.
                   </p>
                 </div>
                 <Button onClick={() => setIsPickerOpen(false)} size="sm" variant="ghost">
-                  Close
+                  ✕
                 </Button>
               </div>
-            </div>
-            <div className="grid gap-2">
-              {chartCatalog.map((chart) => (
-                <div
-                  className={
-                    chartSlots[selectedSlotIndex] === chart.id || wideChartId === chart.id
-                      ? 'rounded-md border border-brand bg-brand-soft px-3 py-3 text-left'
-                      : 'rounded-md border border-border bg-surface px-3 py-3 text-left hover:border-border-strong hover:bg-surface-hover'
-                  }
-                  draggable
-                  key={chart.id}
-                  onDragStart={(event) => {
-                    const preview = event.currentTarget.querySelector<HTMLElement>(
-                      '[data-chart-drag-preview]',
-                    );
+              <div className="grid gap-2">
+                {chartCatalog.map((chart) => {
+                  const isActive =
+                    chartSlots[selectedSlotIndex] === chart.id || wideChartId === chart.id;
+                  const typeLabel = chartTypeLabels[chart.id] ?? 'Chart';
 
-                    event.dataTransfer.effectAllowed = 'copy';
-                    event.dataTransfer.setData('text/plain', chart.id);
-
-                    if (preview) {
-                      event.dataTransfer.setDragImage(preview, 160, 96);
-                    }
-                  }}
-                  tabIndex={0}
-                >
-                  <span className="block text-sm font-semibold text-text">{chart.title}</span>
-                  <span className="mt-1 block text-sm text-text-soft">{chart.description}</span>
-                  <ChartDragPreview
-                    categoryStats={categoryStats}
-                    chartId={chart.id}
-                    dailyExpenseStats={dailyExpenseStats}
-                    monthlyStats={monthlyStats}
-                  />
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <Button onClick={() => updateChartSlot(0, chart.id)} size="sm" variant="ghost">
-                      Slot 1
-                    </Button>
-                    <Button onClick={() => updateChartSlot(1, chart.id)} size="sm" variant="ghost">
-                      Slot 2
-                    </Button>
-                    {chart.supportsWide ? (
-                      <Button
-                        onClick={() => updateWideChart(chart.id)}
-                        size="sm"
-                        variant="secondary"
-                      >
-                        Wide
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </aside>
+                  return (
+                    <div
+                      className={
+                        isActive
+                          ? 'rounded-xl border border-brand bg-brand-soft px-3 py-3 text-left'
+                          : 'rounded-xl border border-border bg-surface px-3 py-3 text-left hover:border-border-strong hover:bg-surface-hover'
+                      }
+                      draggable
+                      key={chart.id}
+                      onDragStart={(event) => {
+                        const preview = event.currentTarget.querySelector<HTMLElement>(
+                          '[data-chart-drag-preview]',
+                        );
+                        event.dataTransfer.effectAllowed = 'copy';
+                        event.dataTransfer.setData('text/plain', chart.id);
+                        if (preview) {
+                          event.dataTransfer.setDragImage(preview, 160, 96);
+                        }
+                      }}
+                      tabIndex={0}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-text">{chart.title}</span>
+                            <span className="rounded-full border border-border px-1.5 py-0.5 text-xs text-text-soft">
+                              {typeLabel}
+                            </span>
+                          </div>
+                          <span className="mt-0.5 block text-xs text-text-soft">
+                            {chart.description}
+                          </span>
+                        </div>
+                      </div>
+                      <ChartDragPreview
+                        categoryStats={categoryStats}
+                        chartId={chart.id}
+                        dailyExpenseStats={dailyExpenseStats}
+                        monthlyStats={monthlyStats}
+                      />
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => updateChartSlot(0, chart.id)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          Main
+                        </Button>
+                        <Button
+                          onClick={() => updateChartSlot(1, chart.id)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          Secondary
+                        </Button>
+                        {chart.supportsWide ? (
+                          <Button
+                            onClick={() => updateWideChart(chart.id)}
+                            size="sm"
+                            variant="secondary"
+                          >
+                            Focus view
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </aside>
+        </>
       ) : null}
     </section>
   );
