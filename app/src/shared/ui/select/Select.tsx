@@ -75,7 +75,9 @@ export function Select({
           error && 'border-danger focus:border-danger focus:ring-danger-soft',
         )}
         disabled={disabled}
-        onClick={() => setIsOpen((o) => !o)}
+        onClick={() => {
+          if (!isLoading) setIsOpen((o) => !o);
+        }}
         type="button"
       >
         <span className="truncate">{selectedOption?.label ?? 'Select...'}</span>

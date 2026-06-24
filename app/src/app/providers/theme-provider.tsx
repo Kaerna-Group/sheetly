@@ -12,7 +12,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getEffectiveTheme(theme: ThemeValue): 'dark' | 'light' {
+export function getEffectiveTheme(theme: ThemeValue): 'dark' | 'light' {
   if (theme === 'dark') return 'dark';
   if (theme === 'light') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
